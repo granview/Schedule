@@ -1,0 +1,146 @@
+body {
+
+    margin: 0;
+
+    font-family:
+        "Yu Gothic",
+        sans-serif;
+
+    background: #f3f3f3;
+}
+
+header {
+
+    display: flex;
+
+    justify-content:
+        space-between;
+
+    align-items: center;
+
+    padding: 10px;
+
+    background: white;
+
+    border-bottom:
+        2px solid #ccc;
+}
+
+.menu {
+
+    padding: 10px;
+
+    background: white;
+}
+
+.menu button {
+
+    margin-right: 10px;
+}
+
+.toolbar {
+
+    padding: 10px;
+
+    background: white;
+}
+
+#scheduleContainer,
+#leaveContainer {
+
+    overflow: auto;
+
+    background: white;
+
+    padding: 10px;
+}
+
+/*****************************************************************
+ *
+ * BẢNG LỊCH
+ *
+ *****************************************************************/
+
+.schedule-table {
+
+    border-collapse: collapse;
+
+    width: max-content;
+
+    background: white;
+}
+
+.schedule-table th,
+.schedule-table td {
+
+    border: 1px solid black;
+
+    min-width: 50px;
+
+    height: 35px;
+
+    text-align: center;
+}
+
+.name-cell {
+
+    min-width: 180px;
+
+    text-align: left;
+
+    padding-left: 10px;
+
+    background: #f3e6b1;
+
+    font-weight: bold;
+}
+
+.off {
+
+    background: yellow;
+
+    font-weight: bold;
+}
+
+.paid {
+
+    color: red;
+
+    font-weight: bold;
+}
+
+/*****************************************************************
+ *
+ * 希望休
+ *
+ *****************************************************************/
+
+.leave-table {
+
+    border-collapse:
+        collapse;
+
+    background: white;
+}
+
+.leave-table th,
+.leave-table td {
+
+    border:
+        1px solid black;
+
+    width: 40px;
+
+    height: 35px;
+
+    text-align: center;
+}
+
+.leave-table .name-cell {
+
+    width: 180px;
+
+    background: #f3e6b1;
+
+    font-weight: bold;
+}
