@@ -13,32 +13,47 @@ export async function loadLeave(){
 }
 
 export async function saveLeave(
+    
     staffId,
     period,
     days
 ){
+
+    const payload = {
+
+        action: "saveLeave",
+
+        staffId,
+
+        period,
+
+        days
+
+    };
+
+    console.log(
+        "SEND",
+        payload
+    );
 
     const response =
         await fetch(
             API_URL,
             {
                 method:"POST",
-
-                body:
-                JSON.stringify({
-
-                    action:
-                    "saveLeave",
-
-                    staffId,
-
-                    period,
-
-                    days
-
-                })
+                body:JSON.stringify(
+                    payload
+                )
             }
         );
 
-    return await response.json();
+    const result =
+        await response.json();
+
+    console.log(
+        "RESPONSE",
+        result
+    );
+
+    return result;
 }

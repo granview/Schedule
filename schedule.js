@@ -1,23 +1,16 @@
-/*****************************************************************
- *
- * SCHEDULE.JS
- *
- * Hiển thị lịch làm việc
- *
- *****************************************************************/
-
-
-/*****************************************************************
- * DỮ LIỆU GIẢ ĐỂ TEST
- *
- * Sau này sẽ lấy từ Google Sheet
- *****************************************************************/
 import { API_URL }
     from "./api.js";
 let usersData = [];
-
 let scheduleData = [];
 
+let currentPeriod = null;
+
+export function setCurrentPeriod(period) {
+
+    currentPeriod = period;
+
+    renderSchedule();
+}
 export function setData(
     users,
     schedules
@@ -32,7 +25,6 @@ export function setData(
 /*****************************************************************
  * TÊN THỨ TIẾNG NHẬT
  *****************************************************************/
-
 const WEEK_JP = [
 
     "日",
@@ -44,8 +36,6 @@ const WEEK_JP = [
     "土"
 
 ];
-
-
 /*****************************************************************
  * LẤY KHOẢNG NGÀY HIỂN THỊ
  *
@@ -94,8 +84,6 @@ function getPeriod() {
         endDay
     };
 }
-
-
 /*****************************************************************
  * TẠO HEADER NGÀY
  *****************************************************************/
@@ -165,9 +153,24 @@ function createDateHeader(period) {
  *****************************************************************/
 
 export function renderSchedule() {
+    if (!currentPeriod) {
 
+        const periods =
+            [...new Set(
+                scheduleData.map(
+                    s => s.period
+                )
+            )];
+
+        currentPeriod =
+            periods[0];
+    }
+
+    const periodCode =
+        currentPeriod ||
+        getCurrentPeriodCode();
     const period =
-        getPeriod();
+        parsePeriod(periodCode);
 
     const container =
         document.getElementById(
@@ -222,25 +225,32 @@ export function renderSchedule() {
 
                     return (
 
-                        s.staffId ===
+                        s.period ===
+                        currentPeriod
+
+                        &&
+
+                        String(s.staffId)
+                        ===
                         String(user.id)
 
                         &&
 
-                        s.day === day
+                        Number(s.day)
+                        ===
+                        Number(day)
 
                     );
 
                 });
+            const shift =
+                item
+                    ? item.shift
+                    : "";
 
-           const shift =
-    item
-        ? item.shift
-        : "";
+            if (isEditMode) {
 
-if (isEditMode) {
-
-    html += `
+                html += `
 
     <td>
 
@@ -253,27 +263,27 @@ if (isEditMode) {
             <option value=""></option>
 
             <option value="休"
-            ${shift==="休"?"selected":""}>
+            ${shift === "休" ? "selected" : ""}>
             休
             </option>
 
             <option value="8"
-            ${shift==="8"?"selected":""}>
+            ${shift === "8" ? "selected" : ""}>
             8
             </option>
 
             <option value="10"
-            ${shift==="10"?"selected":""}>
+            ${shift === "10" ? "selected" : ""}>
             10
             </option>
 
             <option value="14"
-            ${shift==="14"?"selected":""}>
+            ${shift === "14" ? "selected" : ""}>
             14
             </option>
 
             <option value="15"
-            ${shift==="15"?"selected":""}>
+            ${shift === "15" ? "selected" : ""}>
             15
             </option>
 
@@ -283,9 +293,9 @@ if (isEditMode) {
 
     `;
 
-} else {
+            } else {
 
-    html += `
+                html += `
 
     <td>
 
@@ -295,7 +305,7 @@ if (isEditMode) {
 
     `;
 
-}
+            }
         }
 
         html += `
@@ -379,8 +389,12 @@ export async function saveSchedule() {
 
         const item =
             scheduleData.find(s => {
-
                 return (
+
+                    s.period ===
+                    currentPeriod
+
+                    &&
 
                     String(s.staffId)
                     ===
@@ -428,4 +442,78 @@ export async function loadSchedule() {
         );
 
     return await response.json();
+}
+function parsePeriod(periodCode) {
+
+    const parts =
+        periodCode.split("-");
+
+    const year =
+        Number(parts[0]);
+
+    const month =
+        Number(parts[1]);
+
+    const half =
+        parts[2];
+
+    let startDay;
+    let endDay;
+
+    if (half === "A") {
+
+        startDay = 1;
+        endDay = 15;
+
+    } else {
+
+        startDay = 16;
+
+        endDay =
+            new Date(
+                year,
+                month,
+                0
+            ).getDate();
+    }
+
+    return {
+
+        year,
+        month,
+        startDay,
+        endDay
+
+    };
+}
+export function openPeriod(period) {
+
+    currentPeriod =
+        period;
+
+    renderSchedule();
+
+}
+function getCurrentPeriodCode() {
+
+    const today =
+        new Date();
+
+    const year =
+        today.getFullYear();
+
+    const month =
+        today.getMonth() + 1;
+
+    const day =
+        today.getDate();
+
+    if (day <= 15) {
+
+        return `${year}-${String(month).padStart(2, "0")}-A`;
+
+    }
+
+    return `${year}-${String(month + 1).padStart(2, "0")}-A`;
+
 }

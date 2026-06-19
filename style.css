@@ -1,146 +1,224 @@
+/* =========================================
+   TỔNG THỂ & BIẾN MÀU (VARIABLES)
+   ========================================= */
+:root {
+    --primary-color: #4f46e5;      /* Xanh chàm hiện đại (Màu chủ đạo) */
+    --primary-hover: #4338ca;      /* Xanh đậm hơn khi di chuột */
+    --bg-color: #f3f4f6;           /* Nền xám nhạt toàn trang */
+    --card-bg: #ffffff;            /* Nền trắng cho bảng và form */
+    --text-main: #1f2937;          /* Chữ xám đậm (dễ đọc hơn đen tuyền) */
+    --text-muted: #6b7280;         /* Chữ xám nhạt cho tiêu đề phụ */
+    --border-color: #e5e7eb;       /* Màu viền nhẹ nhàng */
+    --table-header: #f8fafc;       /* Nền cho hàng tiêu đề bảng */
+    --name-col-bg: #fffbeb;        /* Vàng nhạt ấm áp cho cột tên */
+    --radius: 8px;                 /* Độ bo góc chung */
+    --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+    --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+}
+
 body {
-
     margin: 0;
-
-    font-family:
-        "Yu Gothic",
-        sans-serif;
-
-    background: #f3f3f3;
+    font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+    background-color: var(--bg-color);
+    color: var(--text-main);
+    line-height: 1.5;
 }
 
-header {
+h1, h2, h3 {
+    color: var(--text-main);
+    margin: 0 0 16px 0;
+    font-weight: 600;
+}
 
+/* =========================================
+   TRANG LOGIN: FORM ĐĂNG NHẬP HIỆN ĐẠI
+   ========================================= */
+#loginPage {
+    height: 100vh;
     display: flex;
-
-    justify-content:
-        space-between;
-
+    flex-direction: column;
+    justify-content: center;
     align-items: center;
-
-    padding: 10px;
-
-    background: white;
-
-    border-bottom:
-        2px solid #ccc;
+    /* Hiệu ứng nền gradient nhẹ cho trang đăng nhập */
+    background: linear-gradient(135deg, #f3f4f6 0%, #e5e7eb 100%); 
 }
 
-.menu {
-
-    padding: 10px;
-
-    background: white;
+#loginPage input {
+    margin: 10px 0;
+    padding: 14px 16px;
+    width: 260px;
+    border-radius: var(--radius);
+    border: 1px solid var(--border-color);
+    background-color: var(--card-bg);
+    font-size: 15px;
+    color: var(--text-main);
+    box-shadow: var(--shadow-sm);
+    transition: all 0.3s ease;
 }
 
-.menu button {
-
-    margin-right: 10px;
+/* Hiệu ứng phát sáng nhẹ khi click vào ô nhập */
+#loginPage input:focus {
+    outline: none;
+    border-color: var(--primary-color);
+    box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.15); 
 }
 
+#loginPage button {
+    margin-top: 15px;
+    padding: 14px 20px;
+    width: 294px; /* Khớp với độ rộng input + padding */
+    background-color: var(--primary-color);
+    color: white;
+    border: none;
+    border-radius: var(--radius);
+    cursor: pointer;
+    font-size: 16px;
+    font-weight: 600;
+    box-shadow: var(--shadow-md);
+    transition: all 0.2s ease;
+}
+
+#loginPage button:hover {
+    background-color: var(--primary-hover);
+    transform: translateY(-1px); /* Nút nổi lên nhẹ khi di chuột */
+}
+
+#loginPage button:active {
+    transform: translateY(1px);  /* Nút lún xuống khi bấm */
+}
+
+/* =========================================
+   TOOLBAR & NÚT BẤM CHUNG
+   ========================================= */
 .toolbar {
-
-    padding: 10px;
-
-    background: white;
+    padding: 16px 24px;
+    display: flex;
+    gap: 12px;
+    background-color: var(--card-bg);
+    border-bottom: 1px solid var(--border-color);
+    box-shadow: var(--shadow-sm);
+    margin-bottom: 24px;
+    align-items: center;
 }
 
-#scheduleContainer,
-#leaveContainer {
-
-    overflow: auto;
-
-    background: white;
-
-    padding: 10px;
+button {
+    padding: 10px 18px;
+    border-radius: 6px;
+    border: 1px solid var(--border-color);
+    background: var(--card-bg);
+    color: var(--text-main);
+    cursor: pointer;
+    font-weight: 500;
+    font-size: 14px;
+    box-shadow: var(--shadow-sm);
+    transition: all 0.2s ease;
 }
 
-/*****************************************************************
- *
- * BẢNG LỊCH
- *
- *****************************************************************/
+button:hover {
+    background: #f8fafc;
+    border-color: #cbd5e1;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+}
 
-.schedule-table {
+button:active {
+    background: #e2e8f0;
+}
 
+/* Làm nổi bật riêng nút LƯU (nếu bạn có ID này) */
+#saveScheduleBtn, #saveLeaveBtn {
+    background-color: var(--primary-color);
+    color: white;
+    border: none;
+}
+#saveScheduleBtn:hover, #saveLeaveBtn:hover {
+    background-color: var(--primary-hover);
+}
+
+/* =========================================
+   BẢNG LỊCH & BẢNG NGHỈ (TABLE)
+   ========================================= */
+/* Bọc bảng trong một vùng để đổ bóng đẹp hơn */
+.table-wrapper {
+    margin: 0 24px 24px 24px;
+    background: var(--card-bg);
+    border-radius: var(--radius);
+    box-shadow: var(--shadow-md);
+    border: 1px solid var(--border-color);
+    overflow-x: auto; /* Cho phép cuộn ngang nếu màn hình nhỏ */
+}
+
+.schedule-table, .leave-table {
     border-collapse: collapse;
-
-    width: max-content;
-
-    background: white;
+    width: 100%;
+    background: var(--card-bg);
+    font-size: 14px;
 }
 
-.schedule-table th,
-.schedule-table td {
-
-    border: 1px solid black;
-
-    min-width: 50px;
-
-    height: 35px;
-
+.schedule-table th, .schedule-table td,
+.leave-table th, .leave-table td {
+    border: 1px solid var(--border-color);
+    padding: 7px 4px;
     text-align: center;
+    vertical-align: middle;
+    min-width: 45px;
 }
 
+/* Tiêu đề bảng */
+.schedule-table thead th, 
+.leave-table thead th {
+    background-color: var(--table-header);
+    color: var(--text-muted);
+    font-weight: 600;
+    font-size: 13px;
+    text-transform: uppercase; /* Viết hoa nhẹ để phân biệt nội dung */
+    letter-spacing: 0.03em;
+}
+
+/* Cột Tên (Cố định trái) */
 .name-cell {
-
-    min-width: 180px;
-
+    position: sticky;
+    left: 0;
+    background-color: var(--name-col-bg) !important;
+    color: var(--text-main);
+    font-weight: 600;
     text-align: left;
-
-    padding-left: 10px;
-
-    background: #f3e6b1;
-
-    font-weight: bold;
+    min-width: 130px;
+    padding-left: 16px !important;
+    z-index: 2;
+    box-shadow: inset -1px 0 0 var(--border-color); /* Đường kẻ ảo để ngăn cách nội dung khi cuộn */
 }
 
-.off {
-
-    background: yellow;
-
-    font-weight: bold;
+/* Hiệu ứng khi lướt chuột qua hàng */
+.schedule-table tbody tr:hover, 
+.leave-table tbody tr:hover {
+    background-color: #f8fafc;
+    transition: background-color 0.2s ease;
 }
 
-.paid {
-
-    color: red;
-
-    font-weight: bold;
-}
-
-/*****************************************************************
- *
- * 希望休
- *
- *****************************************************************/
-
-.leave-table {
-
-    border-collapse:
-        collapse;
-
-    background: white;
-}
-
-.leave-table th,
-.leave-table td {
-
-    border:
-        1px solid black;
-
-    width: 40px;
-
-    height: 35px;
-
+/* =========================================
+   Ô CHỌN (SELECT) TRONG BẢNG NGHỈ
+   ========================================= */
+.leave-select {
+    width: 100%;
+    height: 100%;
+    min-height: 40px;
+    border: none;
+    background: transparent;
     text-align: center;
+    font-size: 14px;
+    font-weight: 500;
+    color: var(--text-main);
+    cursor: pointer;
+    outline: none;
+    border-radius: 4px;
 }
 
-.leave-table .name-cell {
-
-    width: 180px;
-
-    background: #f3e6b1;
-
-    font-weight: bold;
+/* Khi người dùng click vào ô để chọn */
+.leave-select:focus {
+    background-color: #eff6ff; 
+    box-shadow: inset 0 0 0 2px var(--primary-color); /* Khung xanh bao quanh ô chữ nhật bên trong */
 }
+
+/* Làm nổi bật dữ liệu: Chữ 休 (Đỏ) và 有休 (Xanh lá) */
+.leave-select option[value="休"] { color: #dc2626; font-weight: bold; }
+.leave-select option[value="有休"] { color: #059669; font-weight: bold; }
