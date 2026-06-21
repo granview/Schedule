@@ -1,42 +1,45 @@
-/*****************************************************************
- * AUTH.JS
- *
- * Login từ Google Sheet
- *****************************************************************/
+import { db } from "./api.js";
+import { ref, get, set } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
 
-import { API_URL } from "./api.js";
+export async function getUsers() {
+    const allUsers = {};
 
-export async function login(
-    id,
-    password
-){
+    const snapshotSingular = await get(ref(db, "user"));
+    if (snapshotSingular.exists()) {
+        const val = snapshotSingular.val();
+        if (val && "id" in val) {
+            allUsers[String(val.id)] = val;
+        }
+    }
 
-    const response =
-        await fetch(
-            API_URL +
-            "?action=users"
-        );
+    const snapshotPlural = await get(ref(db, "users"));
+    if (snapshotPlural.exists()) {
+        const val = snapshotPlural.val();
+        if (typeof val === "object") {
+            Object.values(val).forEach(u => {
+                if (u && "id" in u) {
+                    allUsers[String(u.id)] = u;
+                }
+            });
+        }
+    }
 
-    const users =
-        await response.json();
+    return Object.values(allUsers);
+}
 
-    return users.find(user => {
-
-    return (
+export async function login(id, password) {
+    const users = await getUsers();
+    return users.find(user =>
         String(user.id) === String(id) &&
         String(user.password) === String(password)
     );
-
-});
 }
-export async function getUsers(){
 
-    const response =
-        await fetch(
-            API_URL +
-            "?action=users"
-        );
-
-    return await response.json();
-
+export async function saveUser(user) {
+    await set(ref(db, `users/${user.id}`), {
+        id: String(user.id),
+        name: user.name,
+        password: String(user.password),
+        role: user.role
+    });
 }

@@ -1,9 +1,17 @@
-import { API_URL }
-    from "./api.js";
+import { db } from "./api.js";
+import {
+    ref,
+    get,
+    update
+} from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
 let usersData = [];
 let scheduleData = [];
-
+let leaveData = [];
 let currentPeriod = null;
+
+export function setLeaveData(data) {
+    leaveData = data;
+}
 
 export function setCurrentPeriod(period) {
 
@@ -154,23 +162,12 @@ function createDateHeader(period) {
 
 export function renderSchedule() {
     if (!currentPeriod) {
-
-        const periods =
-            [...new Set(
-                scheduleData.map(
-                    s => s.period
-                )
-            )];
-
-        currentPeriod =
-            periods[0];
+        currentPeriod = getCurrentPeriodCode();
     }
 
-    const periodCode =
-        currentPeriod ||
-        getCurrentPeriodCode();
-    const period =
-        parsePeriod(periodCode);
+    const periodCode = currentPeriod;
+    const period = parsePeriod(periodCode);
+    const halfStr = periodCode.endsWith("-A") ? "前半" : "後半";
 
     const container =
         document.getElementById(
@@ -178,12 +175,8 @@ export function renderSchedule() {
         );
 
     let html = `
-
-        <h2>
-
-            ${period.year}年
-            ${period.month}月
-
+        <h2 style="text-align:center; margin:12px 0;">
+            ${period.year}年${period.month}月&nbsp;${halfStr}
         </h2>
 
         <table
@@ -221,32 +214,23 @@ export function renderSchedule() {
         ) {
 
             const item =
-                scheduleData.find(s => {
+                scheduleData.find(s =>
+                    s.period === currentPeriod &&
+                    String(s.staffId) === String(user.id) &&
+                    Number(s.day) === Number(day)
+                );
 
-                    return (
+            const leaveItem =
+                leaveData.find(l =>
+                    l.period === currentPeriod &&
+                    String(l.staffId) === String(user.id) &&
+                    Number(l.day) === Number(day)
+                );
 
-                        s.period ===
-                        currentPeriod
-
-                        &&
-
-                        String(s.staffId)
-                        ===
-                        String(user.id)
-
-                        &&
-
-                        Number(s.day)
-                        ===
-                        Number(day)
-
-                    );
-
-                });
-            const shift =
-                item
-                    ? item.shift
-                    : "";
+            let shift = item ? item.shift : "";
+            if (!shift && leaveItem) {
+                shift = leaveItem.type || "休";
+            }
 
             if (isEditMode) {
 
@@ -339,35 +323,25 @@ export function setEditMode(value) {
  * LƯU DỮ LIỆU ĐÃ CHỈNH
  *
  *****************************************************************/
-export async function saveToSheet(
-    schedules
-) {
-
-    const response =
-        await fetch(
-
-            API_URL,
-
-            {
-
-                method: "POST",
-
-                body:
-                    JSON.stringify({
-
-                        action:
-                            "saveSchedule",
-
-                        schedules
-
-                    })
-
-            }
-
-        );
-
-    return await response.json();
-
+export async function saveToSheet(schedules) {
+    try {
+        const updates = {};
+        schedules.forEach(item => {
+            const safeKey = item.period.replace(/-/g, "_");
+            const key = `schedules/${safeKey}_${item.staffId}_${item.day}`;
+            updates[key] = {
+                period: item.period,
+                staffId: String(item.staffId),
+                day: Number(item.day),
+                shift: item.shift || ""
+            };
+        });
+        await update(ref(db, "/"), updates);
+        return { success: true };
+    } catch (e) {
+        console.error(e);
+        return { success: false };
+    }
 }
 export async function saveSchedule() {
 
@@ -378,70 +352,42 @@ export async function saveSchedule() {
 
     selects.forEach(select => {
 
-        const staffId =
-            select.dataset.staff;
+        const staffId = select.dataset.staff;
+        const day = select.dataset.day;
+        const value = select.value;
 
-        const day =
-            select.dataset.day;
-
-        const value =
-            select.value;
-
-        const item =
-            scheduleData.find(s => {
-                return (
-
-                    s.period ===
-                    currentPeriod
-
-                    &&
-
-                    String(s.staffId)
-                    ===
-                    String(staffId)
-
-                    &&
-
-                    Number(s.day)
-                    ===
-                    Number(day)
-
-                );
-
-            });
+        const item = scheduleData.find(s =>
+            s.period === currentPeriod &&
+            String(s.staffId) === String(staffId) &&
+            Number(s.day) === Number(day)
+        );
 
         if (item) {
-
-            item.shift =
-                value;
+            item.shift = value;
+        } else {
+            scheduleData.push({
+                period: currentPeriod,
+                staffId: String(staffId),
+                day: Number(day),
+                shift: value
+            });
         }
-
     });
 
-    console.log(
-        "Saved",
-        scheduleData
-    );
+    const periodData = scheduleData.filter(s => s.period === currentPeriod);
 
-    await saveToSheet(
-        scheduleData
-    );
+    console.log("Saving", periodData);
+
+    await saveToSheet(periodData);
 
     setEditMode(false);
 
-    alert(
-        "Google Sheet 更新完了"
-    );
+    alert("保存完了");
 }
 export async function loadSchedule() {
-
-    const response =
-        await fetch(
-            API_URL +
-            "?action=schedule"
-        );
-
-    return await response.json();
+    const snapshot = await get(ref(db, "schedules"));
+    if (!snapshot.exists()) return [];
+    return Object.values(snapshot.val());
 }
 function parsePeriod(periodCode) {
 
@@ -509,11 +455,8 @@ function getCurrentPeriodCode() {
         today.getDate();
 
     if (day <= 15) {
-
         return `${year}-${String(month).padStart(2, "0")}-A`;
-
     }
 
-    return `${year}-${String(month + 1).padStart(2, "0")}-A`;
-
+    return `${year}-${String(month).padStart(2, "0")}-B`;
 }

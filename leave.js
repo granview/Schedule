@@ -86,8 +86,11 @@ export function renderLeave() {
 
 
     // 2. Bắt đầu vẽ HTML
+    const halfStr = period.periodCode.endsWith("-A") ? "前半" : "後半";
     let html = `
-    <h2>${period.month}月 希望休</h2>
+    <h2 style="text-align:center; margin:12px 0;">
+        ${period.year}年${period.month}月&nbsp;${halfStr}&nbsp;希望休
+    </h2>
     <table class="leave-table">
         <thead>
             <tr>
@@ -216,13 +219,12 @@ async function registerLeaveEvents() {
     };
 }
 export async function loadLeaveData() {
+    leaveData = await loadLeave();
+    console.log("LEAVE DATA", leaveData);
+}
 
-    leaveData =
-        await loadLeave();
-    console.log(
-        "LEAVE DATA",
-        leaveData
-    );
+export function getLeaveDataList() {
+    return leaveData;
 }
 let usersData = [];
 

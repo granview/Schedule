@@ -12,18 +12,21 @@ import {
     setEditMode,
     saveSchedule,
     setCurrentPeriod,
-    openPeriod
+    openPeriod,
+    setLeaveData
 }
     from "./schedule.js";
 import {
     renderLeave,
     loadLeaveData,
-    setLeaveUsers
+    setLeaveUsers,
+    getLeaveDataList
 }
     from "./leave.js";
 import {
     login,
-    getUsers
+    getUsers,
+    saveUser
 }
     from "./auth.js";
 import {
@@ -32,16 +35,34 @@ import {
     loadPeriods
 }
     from "./schedule-api.js";
+function showModal(title, defaultValue) {
+    return new Promise((resolve) => {
+        const modal = document.getElementById("customModal");
+        const titleEl = document.getElementById("modalTitle");
+        const input = document.getElementById("modalInput");
+        const okBtn = document.getElementById("modalOkBtn");
+        const cancelBtn = document.getElementById("modalCancelBtn");
+
+        titleEl.textContent = title;
+        input.value = defaultValue || "";
+        modal.style.display = "flex";
+        input.focus();
+
+        const cleanup = () => { modal.style.display = "none"; };
+
+        okBtn.onclick = () => { cleanup(); resolve(input.value.trim() || null); };
+        cancelBtn.onclick = () => { cleanup(); resolve(null); };
+        input.onkeydown = (e) => {
+            if (e.key === "Enter") okBtn.click();
+            if (e.key === "Escape") cancelBtn.click();
+        };
+    });
+}
+
 document
     .getElementById("createPeriodBtn")
     .onclick = async () => {
-
-        const period =
-            prompt(
-                "作成期間",
-                "2026-07-A"
-            );
-
+        const period = await showModal("作成期間を入力してください", "2026-07-A");
         if (!period) return;
 
         const result =
@@ -56,42 +77,17 @@ document
     };
 
 document
-    .getElementById(
-        "publishBtn"
-    )
+    .getElementById("publishBtn")
     .onclick = async () => {
-
-        const period =
-            prompt(
-                "公開期間",
-                "2026-07-A"
-            );
-
+        const period = await showModal("公開期間を入力してください", "2026-07-A");
         if (!period) return;
 
-        const result =
-            await publishPeriod(
-                period
-            );
-
-        console.log(result);
-
-        if (
-            result.success
-        ) {
-
-            alert(
-                "公開完了"
-            );
-
+        const result = await publishPeriod(period);
+        if (result.success) {
+            alert("公開完了");
         } else {
-
-            alert(
-                "公開失敗"
-            );
-
+            alert("公開失敗");
         }
-
     };
 const loginBtn =
     document.getElementById(
@@ -129,6 +125,7 @@ loginBtn.onclick = async () => {
         if (user.role === "manager") {
             document.getElementById("editScheduleBtn").style.display = "inline-block";
             document.getElementById("saveScheduleBtn").style.display = "inline-block";
+            document.getElementById("addStaffBtn").style.display = "inline-block";
         }
 
         // Gọi hàm tải dữ liệu (đã bỏ overlay trong hàm này)
@@ -136,7 +133,12 @@ loginBtn.onclick = async () => {
 
     } catch (error) {
         console.error("Lỗi:", error);
-        alert("Có lỗi xảy ra!");
+        const msg = error?.message || error?.code || JSON.stringify(error);
+        if (msg.includes("permission") || msg.includes("PERMISSION")) {
+            alert("Firebase: Quyền truy cập bị từ chối!\nVui lòng kiểm tra Security Rules trong Firebase Console.\nRules cần set: \".read\": true, \".write\": true");
+        } else {
+            alert("Có lỗi xảy ra: " + (msg || "Lỗi không xác định"));
+        }
     } finally {
         if (overlay) {
             overlay.style.display = 'none'; // Tắt loading ở đây
@@ -191,14 +193,15 @@ async function performAppLoad() {
 
         setData(users, scheduleData);
         setLeaveUsers(users);
+        setLeaveData(getLeaveDataList());
         renderSchedule();
         renderLeave();
         renderPeriodList(periods);
 
-        // --- QUAN TRỌNG: GỌI ĐĂNG KÝ SỰ KIỆN Ở ĐÂY ---
         registerTabEvents();
         registerLogoutEvent();
         registerScheduleButtons();
+        registerAddStaffBtn();
 
     } catch (error) {
         console.error("Lỗi tải dữ liệu:", error);
@@ -367,4 +370,47 @@ function formatPeriod(period) {
         parts[2];
 
     return `${year}年${month}月${half === "A" ? "前半" : "後半"}`;
+}
+
+function registerAddStaffBtn() {
+    const addBtn = document.getElementById("addStaffBtn");
+    const modal = document.getElementById("staffModal");
+    const cancelBtn = document.getElementById("staffCancelBtn");
+    const saveBtn = document.getElementById("staffSaveBtn");
+
+    if (!addBtn) return;
+
+    addBtn.onclick = () => {
+        document.getElementById("staffId").value = "";
+        document.getElementById("staffName").value = "";
+        document.getElementById("staffPassword").value = "";
+        document.getElementById("staffRole").value = "staff";
+        modal.style.display = "flex";
+    };
+
+    cancelBtn.onclick = () => {
+        modal.style.display = "none";
+    };
+
+    saveBtn.onclick = async () => {
+        const id = document.getElementById("staffId").value.trim();
+        const name = document.getElementById("staffName").value.trim();
+        const password = document.getElementById("staffPassword").value.trim();
+        const role = document.getElementById("staffRole").value;
+
+        if (!id || !name || !password) {
+            alert("すべての項目を入力してください");
+            return;
+        }
+
+        try {
+            await saveUser({ id, name, password, role });
+            modal.style.display = "none";
+            alert(`${name} を追加しました`);
+            location.reload();
+        } catch (e) {
+            console.error(e);
+            alert("保存に失敗しました: " + (e.message || e));
+        }
+    };
 }

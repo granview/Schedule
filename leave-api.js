@@ -1,59 +1,44 @@
-import { API_URL }
-    from "./api.js";
+import { db } from "./api.js";
+import {
+    ref,
+    get,
+    set,
+    remove,
+    update
+} from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
 
-export async function loadLeave(){
-
-    const response =
-        await fetch(
-            API_URL +
-            "?action=leave"
-        );
-
-    return await response.json();
+export async function loadLeave() {
+    const snapshot = await get(ref(db, "leave"));
+    if (!snapshot.exists()) return [];
+    return Object.values(snapshot.val());
 }
 
-export async function saveLeave(
-    
-    staffId,
-    period,
-    days
-){
+export async function saveLeave(staffId, period, days) {
+    try {
+        const safeKey = period.replace(/-/g, "_");
+        const prefix = `leave/${safeKey}_${staffId}`;
 
-    const payload = {
+        const existing = await get(ref(db, prefix));
+        if (existing.exists()) {
+            await remove(ref(db, prefix));
+        }
 
-        action: "saveLeave",
+        if (days.length === 0) return { success: true };
 
-        staffId,
+        const updates = {};
+        days.forEach(({ day, type }) => {
+            updates[`leave/${safeKey}_${staffId}_${day}`] = {
+                period,
+                staffId: String(staffId),
+                day: Number(day),
+                type
+            };
+        });
 
-        period,
-
-        days
-
-    };
-
-    console.log(
-        "SEND",
-        payload
-    );
-
-    const response =
-        await fetch(
-            API_URL,
-            {
-                method:"POST",
-                body:JSON.stringify(
-                    payload
-                )
-            }
-        );
-
-    const result =
-        await response.json();
-
-    console.log(
-        "RESPONSE",
-        result
-    );
-
-    return result;
+        await update(ref(db, "/"), updates);
+        return { success: true };
+    } catch (e) {
+        console.error(e);
+        return { success: false };
+    }
 }
