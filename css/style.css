@@ -265,3 +265,17 @@ header{
     background:white;
     border-bottom:1px solid #e5e7eb;
 }
+.schedule-layout{
+    display:flex;
+    gap:20px;
+    padding:20px;
+}
+
+#periodList{
+    width:260px;
+    min-width:260px;
+}
+
+#scheduleContainer{
+    flex:1;
+}
