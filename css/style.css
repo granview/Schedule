@@ -222,3 +222,46 @@ button:active {
 /* Làm nổi bật dữ liệu: Chữ 休 (Đỏ) và 有休 (Xanh lá) */
 .leave-select option[value="休"] { color: #dc2626; font-weight: bold; }
 .leave-select option[value="有休"] { color: #059669; font-weight: bold; }
+header{
+    height:60px;
+    background:#ffffff;
+    border-bottom:1px solid #e5e7eb;
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    padding:0 24px;
+    box-shadow:0 1px 4px rgba(0,0,0,.05);
+}
+
+#welcomeText{
+    margin:0;
+    font-size:18px;
+    font-weight:600;
+}
+.menu{
+    display:flex;
+    gap:10px;
+    padding:16px 24px;
+    background:white;
+    border-bottom:1px solid #e5e7eb;
+}
+
+.menu button{
+    min-width:120px;
+    height:42px;
+    border:none;
+    background:#f3f4f6;
+    font-weight:600;
+}
+
+.menu button:hover{
+    background:#e0e7ff;
+}
+.toolbar{
+    display:flex;
+    flex-wrap:wrap;
+    gap:10px;
+    padding:20px 24px;
+    background:white;
+    border-bottom:1px solid #e5e7eb;
+}
