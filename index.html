@@ -34,16 +34,11 @@
         <!-- SCHEDULE -->
         <div id="scheduleTab">
             <div class="toolbar">
-                <button id="createPeriodBtn">次期作成</button>
-                <button id="publishBtn">決定</button>
                 <button id="editScheduleBtn" style="display:none;">編集</button>
                 <button id="saveScheduleBtn" style="display:none;">保存</button>
                 <button id="addStaffBtn" style="display:none;">スタッフ追加</button>
             </div>
-            <div class="schedule-layout">
-    <div id="periodList"></div>
-    <div id="scheduleContainer"></div>
-            </div>
+            <div id="scheduleContainer"></div>
         </div>
 
         <!-- LEAVE -->
@@ -94,7 +89,7 @@
         </div>
     </div>
 
-    <!-- CUSTOM MODAL (thay thế prompt()) -->
+    <!-- CUSTOM MODAL -->
     <div id="customModal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.5); z-index:10000; justify-content:center; align-items:center;">
         <div style="background:#fff; padding:32px; border-radius:12px; min-width:320px; box-shadow:0 8px 32px rgba(0,0,0,0.2);">
             <h3 id="modalTitle" style="margin:0 0 16px; font-size:16px; color:#222;"></h3>

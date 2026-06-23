@@ -2,16 +2,16 @@
    TỔNG THỂ & BIẾN MÀU (VARIABLES)
    ========================================= */
 :root {
-    --primary-color: #4f46e5;      /* Xanh chàm hiện đại (Màu chủ đạo) */
-    --primary-hover: #4338ca;      /* Xanh đậm hơn khi di chuột */
-    --bg-color: #f3f4f6;           /* Nền xám nhạt toàn trang */
-    --card-bg: #ffffff;            /* Nền trắng cho bảng và form */
-    --text-main: #1f2937;          /* Chữ xám đậm (dễ đọc hơn đen tuyền) */
-    --text-muted: #6b7280;         /* Chữ xám nhạt cho tiêu đề phụ */
-    --border-color: #e5e7eb;       /* Màu viền nhẹ nhàng */
-    --table-header: #f8fafc;       /* Nền cho hàng tiêu đề bảng */
-    --name-col-bg: #fffbeb;        /* Vàng nhạt ấm áp cho cột tên */
-    --radius: 8px;                 /* Độ bo góc chung */
+    --primary-color: #4f46e5;
+    --primary-hover: #4338ca;
+    --bg-color: #f3f4f6;
+    --card-bg: #ffffff;
+    --text-main: #1f2937;
+    --text-muted: #6b7280;
+    --border-color: #e5e7eb;
+    --table-header: #f8fafc;
+    --name-col-bg: #fffbeb;
+    --radius: 8px;
     --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
     --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
 }
@@ -31,7 +31,7 @@ h1, h2, h3 {
 }
 
 /* =========================================
-   TRANG LOGIN: FORM ĐĂNG NHẬP HIỆN ĐẠI
+   LOGIN
    ========================================= */
 #loginPage {
     height: 100vh;
@@ -39,8 +39,7 @@ h1, h2, h3 {
     flex-direction: column;
     justify-content: center;
     align-items: center;
-    /* Hiệu ứng nền gradient nhẹ cho trang đăng nhập */
-    background: linear-gradient(135deg, #f3f4f6 0%, #e5e7eb 100%); 
+    background: linear-gradient(135deg, #f3f4f6 0%, #e5e7eb 100%);
 }
 
 #loginPage input {
@@ -56,17 +55,16 @@ h1, h2, h3 {
     transition: all 0.3s ease;
 }
 
-/* Hiệu ứng phát sáng nhẹ khi click vào ô nhập */
 #loginPage input:focus {
     outline: none;
     border-color: var(--primary-color);
-    box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.15); 
+    box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.15);
 }
 
 #loginPage button {
     margin-top: 15px;
     padding: 14px 20px;
-    width: 294px; /* Khớp với độ rộng input + padding */
+    width: 294px;
     background-color: var(--primary-color);
     color: white;
     border: none;
@@ -80,25 +78,25 @@ h1, h2, h3 {
 
 #loginPage button:hover {
     background-color: var(--primary-hover);
-    transform: translateY(-1px); /* Nút nổi lên nhẹ khi di chuột */
+    transform: translateY(-1px);
 }
 
 #loginPage button:active {
-    transform: translateY(1px);  /* Nút lún xuống khi bấm */
+    transform: translateY(1px);
 }
 
 /* =========================================
-   TOOLBAR & NÚT BẤM CHUNG
+   TOOLBAR
    ========================================= */
 .toolbar {
-    padding: 16px 24px;
+    padding: 12px 24px;
     display: flex;
     gap: 12px;
     background-color: var(--card-bg);
     border-bottom: 1px solid var(--border-color);
     box-shadow: var(--shadow-sm);
-    margin-bottom: 24px;
     align-items: center;
+    flex-wrap: wrap;
 }
 
 button {
@@ -124,29 +122,19 @@ button:active {
     background: #e2e8f0;
 }
 
-/* Làm nổi bật riêng nút LƯU (nếu bạn có ID này) */
 #saveScheduleBtn, #saveLeaveBtn {
     background-color: var(--primary-color);
     color: white;
     border: none;
 }
+
 #saveScheduleBtn:hover, #saveLeaveBtn:hover {
     background-color: var(--primary-hover);
 }
 
 /* =========================================
-   BẢNG LỊCH & BẢNG NGHỈ (TABLE)
+   TABLES
    ========================================= */
-/* Bọc bảng trong một vùng để đổ bóng đẹp hơn */
-.table-wrapper {
-    margin: 0 24px 24px 24px;
-    background: var(--card-bg);
-    border-radius: var(--radius);
-    box-shadow: var(--shadow-md);
-    border: 1px solid var(--border-color);
-    overflow-x: auto; /* Cho phép cuộn ngang nếu màn hình nhỏ */
-}
-
 .schedule-table, .leave-table {
     border-collapse: collapse;
     width: 100%;
@@ -163,18 +151,15 @@ button:active {
     min-width: 45px;
 }
 
-/* Tiêu đề bảng */
-.schedule-table thead th, 
+.schedule-table thead th,
 .leave-table thead th {
     background-color: var(--table-header);
     color: var(--text-muted);
     font-weight: 600;
     font-size: 13px;
-    text-transform: uppercase; /* Viết hoa nhẹ để phân biệt nội dung */
     letter-spacing: 0.03em;
 }
 
-/* Cột Tên (Cố định trái) */
 .name-cell {
     position: sticky;
     left: 0;
@@ -185,18 +170,17 @@ button:active {
     min-width: 130px;
     padding-left: 16px !important;
     z-index: 2;
-    box-shadow: inset -1px 0 0 var(--border-color); /* Đường kẻ ảo để ngăn cách nội dung khi cuộn */
+    box-shadow: inset -1px 0 0 var(--border-color);
 }
 
-/* Hiệu ứng khi lướt chuột qua hàng */
-.schedule-table tbody tr:hover, 
+.schedule-table tbody tr:hover,
 .leave-table tbody tr:hover {
     background-color: #f8fafc;
     transition: background-color 0.2s ease;
 }
 
 /* =========================================
-   Ô CHỌN (SELECT) TRONG BẢNG NGHỈ
+   LEAVE SELECT
    ========================================= */
 .leave-select {
     width: 100%;
@@ -213,69 +197,208 @@ button:active {
     border-radius: 4px;
 }
 
-/* Khi người dùng click vào ô để chọn */
 .leave-select:focus {
-    background-color: #eff6ff; 
-    box-shadow: inset 0 0 0 2px var(--primary-color); /* Khung xanh bao quanh ô chữ nhật bên trong */
+    background-color: #eff6ff;
+    box-shadow: inset 0 0 0 2px var(--primary-color);
 }
 
-/* Làm nổi bật dữ liệu: Chữ 休 (Đỏ) và 有休 (Xanh lá) */
 .leave-select option[value="休"] { color: #dc2626; font-weight: bold; }
 .leave-select option[value="有休"] { color: #059669; font-weight: bold; }
-header{
-    height:60px;
-    background:#ffffff;
-    border-bottom:1px solid #e5e7eb;
-    display:flex;
-    align-items:center;
-    justify-content:space-between;
-    padding:0 24px;
-    box-shadow:0 1px 4px rgba(0,0,0,.05);
+
+/* =========================================
+   HEADER
+   ========================================= */
+header {
+    height: 60px;
+    background: #ffffff;
+    border-bottom: 1px solid #e5e7eb;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 24px;
+    box-shadow: 0 1px 4px rgba(0,0,0,.05);
 }
 
-#welcomeText{
-    margin:0;
-    font-size:18px;
-    font-weight:600;
-}
-.menu{
-    display:flex;
-    gap:10px;
-    padding:16px 24px;
-    background:white;
-    border-bottom:1px solid #e5e7eb;
+#welcomeText {
+    margin: 0;
+    font-size: 18px;
+    font-weight: 600;
 }
 
-.menu button{
-    min-width:120px;
-    height:42px;
-    border:none;
-    background:#f3f4f6;
-    font-weight:600;
+.menu {
+    display: flex;
+    gap: 10px;
+    padding: 16px 24px;
+    background: white;
+    border-bottom: 1px solid #e5e7eb;
 }
 
-.menu button:hover{
-    background:#e0e7ff;
-}
-.toolbar{
-    display:flex;
-    flex-wrap:wrap;
-    gap:10px;
-    padding:20px 24px;
-    background:white;
-    border-bottom:1px solid #e5e7eb;
-}
-.schedule-layout{
-    display:flex;
-    gap:20px;
-    padding:20px;
+.menu button {
+    min-width: 120px;
+    height: 42px;
+    border: none;
+    background: #f3f4f6;
+    font-weight: 600;
 }
 
-#periodList{
-    width:260px;
-    min-width:260px;
+.menu button:hover {
+    background: #e0e7ff;
 }
 
-#scheduleContainer{
-    flex:1;
+/* =========================================
+   SCHEDULE CONTAINER
+   ========================================= */
+#scheduleContainer {
+    padding: 20px 24px;
+}
+
+/* =========================================
+   PERIOD NAVIGATION
+   ========================================= */
+.period-nav {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 16px;
+    margin: 8px 0 20px 0;
+}
+
+.period-nav-title {
+    font-size: 20px;
+    font-weight: 700;
+    color: var(--text-main);
+    min-width: 200px;
+    text-align: center;
+}
+
+.period-nav-btn {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    border: 1px solid var(--border-color);
+    background: var(--card-bg);
+    font-size: 16px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: var(--shadow-sm);
+    transition: all 0.2s;
+    padding: 0;
+}
+
+.period-nav-btn:hover:not(:disabled) {
+    background: #e0e7ff;
+    border-color: var(--primary-color);
+    color: var(--primary-color);
+}
+
+.period-nav-btn:disabled {
+    opacity: 0.3;
+    cursor: not-allowed;
+}
+
+/* =========================================
+   PUBLISH / UNPUBLISH BUTTONS
+   ========================================= */
+.btn-publish {
+    background-color: var(--primary-color);
+    color: white;
+    border: none;
+    padding: 12px 40px;
+    font-size: 16px;
+    font-weight: 700;
+    border-radius: 8px;
+    box-shadow: var(--shadow-md);
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.btn-publish:hover {
+    background-color: var(--primary-hover);
+    transform: translateY(-1px);
+}
+
+.btn-unpublish {
+    background-color: #f3f4f6;
+    color: #6b7280;
+    border: 1px solid #d1d5db;
+    padding: 12px 40px;
+    font-size: 16px;
+    font-weight: 700;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.btn-unpublish:hover {
+    background-color: #fee2e2;
+    border-color: #fca5a5;
+    color: #dc2626;
+    transform: translateY(-1px);
+}
+
+/* =========================================
+   LEAVE PERIOD TABS
+   ========================================= */
+.leave-period-tabs {
+    display: flex;
+    gap: 8px;
+    padding: 16px 24px 0 24px;
+    flex-wrap: wrap;
+}
+
+.leave-period-tab {
+    padding: 8px 20px;
+    border-radius: 20px;
+    border: 1px solid var(--border-color);
+    background: #f3f4f6;
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.leave-period-tab:hover {
+    background: #e0e7ff;
+    border-color: var(--primary-color);
+    color: var(--primary-color);
+}
+
+.leave-period-tab.active {
+    background: var(--primary-color);
+    color: white;
+    border-color: var(--primary-color);
+}
+
+/* =========================================
+   LEAVE CONTAINER
+   ========================================= */
+#leaveContainer {
+    padding: 0 0 24px 0;
+}
+
+#leaveContainer h2 {
+    padding: 0 24px;
+}
+
+#leaveContainer > div[style*="overflow"] {
+    margin: 0 24px;
+}
+
+#saveLeaveBtn {
+    display: block;
+    margin: 0 auto;
+    background-color: var(--primary-color);
+    color: white;
+    border: none;
+    padding: 12px 40px;
+    font-size: 15px;
+    font-weight: 600;
+    border-radius: 8px;
+    cursor: pointer;
+}
+
+#saveLeaveBtn:hover {
+    background-color: var(--primary-hover);
 }

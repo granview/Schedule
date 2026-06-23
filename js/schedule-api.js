@@ -30,3 +30,13 @@ export async function publishPeriod(period) {
         return { success: false };
     }
 }
+
+export async function unpublishPeriod(period) {
+    try {
+        await update(ref(db, `periods/${period}`), { status: "draft" });
+        return { success: true };
+    } catch (e) {
+        console.error(e);
+        return { success: false };
+    }
+}

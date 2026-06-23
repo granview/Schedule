@@ -1,10 +1,3 @@
-/*****************************************************************
- *
- * APP.JS
- *
- * File chính
- *
- *****************************************************************/
 import {
     renderSchedule,
     loadSchedule,
@@ -13,28 +6,25 @@ import {
     saveSchedule,
     setCurrentPeriod,
     openPeriod,
-    setLeaveData
-}
-    from "./schedule.js";
+    setLeaveData,
+    setAllPeriods
+} from "./schedule.js";
 import {
     renderLeave,
     loadLeaveData,
     setLeaveUsers,
-    getLeaveDataList
-}
-    from "./leave.js";
+    getLeaveDataList,
+    setLeavePeriods
+} from "./leave.js";
 import {
     login,
     getUsers,
     saveUser
-}
-    from "./auth.js";
+} from "./auth.js";
 import {
-    createNextPeriod,
-    publishPeriod,
     loadPeriods
-}
-    from "./schedule-api.js";
+} from "./schedule-api.js";
+
 function showModal(title, defaultValue) {
     return new Promise((resolve) => {
         const modal = document.getElementById("customModal");
@@ -59,61 +49,33 @@ function showModal(title, defaultValue) {
     });
 }
 
-document
-    .getElementById("createPeriodBtn")
-    .onclick = async () => {
-        const period = await showModal("作成期間を入力してください", "2026-07-A");
-        if (!period) return;
+const loginBtn = document.getElementById("loginBtn");
 
-        const result =
-            await createNextPeriod(period);
+document.getElementById("loginId").addEventListener("keydown", (e) => {
+    if (e.key === "Enter") {
+        e.preventDefault();
+        document.getElementById("loginPassword").focus();
+    }
+});
+document.getElementById("loginPassword").addEventListener("keydown", (e) => {
+    if (e.key === "Enter") {
+        e.preventDefault();
+        loginBtn.click();
+    }
+});
 
-        if (result.success) {
-
-            alert("作成完了");
-
-            location.reload();
-        }
-    };
-
-document
-    .getElementById("publishBtn")
-    .onclick = async () => {
-        const period = await showModal("公開期間を入力してください", "2026-07-A");
-        if (!period) return;
-
-        const result = await publishPeriod(period);
-        if (result.success) {
-            alert("公開完了");
-        } else {
-            alert("公開失敗");
-        }
-    };
-const loginBtn =
-    document.getElementById(
-        "loginBtn"
-    );
-
-// app.js - Xóa toàn bộ đoạn loginBtn.onclick cũ và thay bằng đoạn này:
-// Thay thế toàn bộ hàm loginBtn.onclick hiện tại bằng đoạn này
 loginBtn.onclick = async () => {
     const id = document.getElementById("loginId").value;
     const password = document.getElementById("loginPassword").value;
-    const overlay =
-        document.getElementById(
-            "loadingOverlay"
-        );
+    const overlay = document.getElementById("loadingOverlay");
 
-    if (overlay) {
-        overlay.style.display =
-            "flex";
-    } // Bật loading
+    if (overlay) overlay.style.display = "flex";
 
     try {
         const user = await login(id, password);
         if (!user) {
             alert("Login Error: Sai ID hoặc Password");
-            overlay.style.display = 'none'; // Tắt nếu sai pass
+            overlay.style.display = "none";
             return;
         }
 
@@ -128,7 +90,6 @@ loginBtn.onclick = async () => {
             document.getElementById("addStaffBtn").style.display = "inline-block";
         }
 
-        // Gọi hàm tải dữ liệu (đã bỏ overlay trong hàm này)
         await performAppLoad();
 
     } catch (error) {
@@ -140,63 +101,36 @@ loginBtn.onclick = async () => {
             alert("Có lỗi xảy ra: " + (msg || "Lỗi không xác định"));
         }
     } finally {
-        if (overlay) {
-            overlay.style.display = 'none'; // Tắt loading ở đây
-        }
-
+        if (overlay) overlay.style.display = "none";
     }
-
 };
-/*****************************************************************
- *
- * NÚT EDIT / SAVE
- *
- *****************************************************************/
 
 function registerScheduleButtons() {
+    const editBtn = document.getElementById("editScheduleBtn");
+    const saveBtn = document.getElementById("saveScheduleBtn");
 
-    const editBtn =
-        document.getElementById(
-            "editScheduleBtn"
-        );
-
-    const saveBtn =
-        document.getElementById(
-            "saveScheduleBtn"
-        );
-
-    editBtn.onclick = () => {
-
-        setEditMode(true);
-
-    };
-
-    saveBtn.onclick = () => {
-
-        saveSchedule();
-
-    };
+    editBtn.onclick = () => setEditMode(true);
+    saveBtn.onclick = () => saveSchedule();
 }
-// app.js
+
 async function performAppLoad() {
     try {
-        const [users, scheduleData] =
-            await Promise.all([
-                getUsers(),
-                loadSchedule()
-            ]);
+        const [users, scheduleData] = await Promise.all([
+            getUsers(),
+            loadSchedule()
+        ]);
 
         await loadLeaveData();
-
-        const periods =
-            await loadPeriods();
+        const periods = await loadPeriods();
 
         setData(users, scheduleData);
         setLeaveUsers(users);
         setLeaveData(getLeaveDataList());
+        setAllPeriods(periods);
+        setLeavePeriods(periods);
+
         renderSchedule();
         renderLeave();
-        renderPeriodList(periods);
 
         registerTabEvents();
         registerLogoutEvent();
@@ -208,13 +142,7 @@ async function performAppLoad() {
         alert("Có lỗi xảy ra khi tải dữ liệu!");
     }
 }
-/*****************************************************************
- *
- * CÁC HÀM ĐĂNG KÝ SỰ KIỆN NÚT BẤM (Giao diện)
- *
- *****************************************************************/
 
-// 1. Hàm chuyển Tab
 function registerTabEvents() {
     const scheduleBtn = document.getElementById("scheduleTabBtn");
     const leaveBtn = document.getElementById("leaveTabBtn");
@@ -226,7 +154,6 @@ function registerTabEvents() {
             scheduleTab.style.display = "block";
             leaveTab.style.display = "none";
         };
-
         leaveBtn.onclick = () => {
             scheduleTab.style.display = "none";
             leaveTab.style.display = "block";
@@ -234,141 +161,21 @@ function registerTabEvents() {
     }
 }
 
-// 2. Hàm Đăng xuất
 function registerLogoutEvent() {
     const logoutBtn = document.getElementById("logoutBtn");
-
     if (logoutBtn) {
         logoutBtn.onclick = () => {
-            sessionStorage.clear(); // Xóa dữ liệu phiên
-            location.reload();      // Tải lại trang về màn hình Login
+            sessionStorage.clear();
+            location.reload();
         };
     }
 }
-function renderPeriodList(periods) {
 
-    const container =
-        document.getElementById(
-            "periodList"
-        );
-
-    if (!container) return;
-
-    let html = "";
-
-    periods.forEach(item => {
-
-        const text =
-            formatPeriod(
-                item.period
-            );
-
-        html += `
-
-        <div
-            style="
-            margin:5px 0;
-            padding:8px;
-            border:1px solid #ccc;
-            ">
-            <span
-                class="period-link"
-                data-period="${item.period}"
-                style="
-                    cursor:pointer;
-                    color:blue;
-                    text-decoration:underline;
-                "
-            >
-                ${text}
-            </span>
-
-            ${item.status ===
-                "draft"
-
-                ?
-
-                `
-                <button
-                    class="publish-btn"
-                    data-period="${item.period}">
-                    決定
-                </button>
-                `
-
-                :
-
-                `
-                <span>
-                    公開済み
-                </span>
-                `
-            }
-
-        </div>
-        `;
-    });
-
-    container.innerHTML =
-        html; document
-            .querySelectorAll(".period-link")
-            .forEach(link => {
-
-                link.onclick = () => {
-
-                    openPeriod(
-                        link.dataset.period
-                    );
-
-                };
-
-            });
-
-    document
-        .querySelectorAll(
-            ".publish-btn"
-        )
-        .forEach(btn => {
-
-            btn.onclick =
-                async () => {
-
-                    const result =
-                        await publishPeriod(
-                            btn.dataset.period
-                        );
-
-                    if (
-                        result.success
-                    ) {
-
-                        alert(
-                            "公開完了"
-                        );
-
-                        location.reload();
-
-                    }
-
-                };
-
-        });
-
-}
 function formatPeriod(period) {
-
-    const parts =
-        period.split("-");
-
-    const year =
-        parts[0];
-
-    const month =
-        Number(parts[1]);
-
-    const half =
-        parts[2];
-
+    const parts = period.split("-");
+    const year = parts[0];
+    const month = Number(parts[1]);
+    const half = parts[2];
     return `${year}年${month}月${half === "A" ? "前半" : "後半"}`;
 }
 
@@ -388,9 +195,7 @@ function registerAddStaffBtn() {
         modal.style.display = "flex";
     };
 
-    cancelBtn.onclick = () => {
-        modal.style.display = "none";
-    };
+    cancelBtn.onclick = () => { modal.style.display = "none"; };
 
     saveBtn.onclick = async () => {
         const id = document.getElementById("staffId").value.trim();
