@@ -24,7 +24,7 @@ import {
 import {
     loadPeriods
 } from "./schedule-api.js";
-
+import { showToast } from "./toast.js";
 function showModal(title, defaultValue) {
     return new Promise((resolve) => {
         const modal = document.getElementById("customModal");
@@ -74,7 +74,7 @@ loginBtn.onclick = async () => {
     try {
         const user = await login(id, password);
         if (!user) {
-            alert("Login Error: Sai ID hoặc Password");
+            showToast("Login Error: Sai ID hoặc Password", "error");
             overlay.style.display = "none";
             return;
         }
@@ -85,10 +85,10 @@ loginBtn.onclick = async () => {
         document.getElementById("welcomeText").innerText = user.name;
 
         if (user.role === "manager") {
-            document.getElementById("editScheduleBtn").style.display = "inline-block";
-            document.getElementById("saveScheduleBtn").style.display = "inline-block";
-            document.getElementById("addStaffBtn").style.display = "inline-block";
-        }
+    document.getElementById("editScheduleBtn").style.display = "inline-block";
+    document.getElementById("saveScheduleBtn").style.display = "none";
+    document.getElementById("addStaffBtn").style.display = "inline-block";
+}
 
         await performAppLoad();
 
@@ -96,9 +96,9 @@ loginBtn.onclick = async () => {
         console.error("Lỗi:", error);
         const msg = error?.message || error?.code || JSON.stringify(error);
         if (msg.includes("permission") || msg.includes("PERMISSION")) {
-            alert("Firebase: Quyền truy cập bị từ chối!\nVui lòng kiểm tra Security Rules trong Firebase Console.\nRules cần set: \".read\": true, \".write\": true");
+            showToast("Firebase: Quyền truy cập bị từ chối!\nVui lòng kiểm tra Security Rules trong Firebase Console.\nRules cần set: \".read\": true, \".write\": true", "error");
         } else {
-            alert("Có lỗi xảy ra: " + (msg || "Lỗi không xác định"));
+            showToast("Có lỗi xảy ra: " + (msg || "Lỗi không xác định"), "error");
         }
     } finally {
         if (overlay) overlay.style.display = "none";
@@ -109,8 +109,27 @@ function registerScheduleButtons() {
     const editBtn = document.getElementById("editScheduleBtn");
     const saveBtn = document.getElementById("saveScheduleBtn");
 
-    editBtn.onclick = () => setEditMode(true);
-    saveBtn.onclick = () => saveSchedule();
+    // trạng thái ban đầu
+    editBtn.style.display = "inline-block";
+    saveBtn.style.display = "none";
+
+    editBtn.onclick = () => {
+
+        setEditMode(true);
+
+        editBtn.style.display = "none";
+        saveBtn.style.display = "inline-block";
+    };
+
+    saveBtn.onclick = async () => {
+
+        await saveSchedule();
+
+        setEditMode(false);
+
+        saveBtn.style.display = "none";
+        editBtn.style.display = "inline-block";
+    };
 }
 
 async function performAppLoad() {
@@ -139,7 +158,7 @@ async function performAppLoad() {
 
     } catch (error) {
         console.error("Lỗi tải dữ liệu:", error);
-        alert("Có lỗi xảy ra khi tải dữ liệu!");
+        showToast("Có lỗi xảy ra khi tải dữ liệu!");
     }
 }
 
@@ -204,18 +223,18 @@ function registerAddStaffBtn() {
         const role = document.getElementById("staffRole").value;
 
         if (!id || !name || !password) {
-            alert("すべての項目を入力してください");
+            showToast("すべての項目を入力してください", "error");
             return;
         }
 
         try {
             await saveUser({ id, name, password, role });
             modal.style.display = "none";
-            alert(`${name} を追加しました`);
+            showToast(`${name} を追加しました`, "success");
             location.reload();
         } catch (e) {
             console.error(e);
-            alert("保存に失敗しました: " + (e.message || e));
+            showToast("保存に失敗しました", "error");
         }
     };
 }

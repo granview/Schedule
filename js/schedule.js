@@ -5,7 +5,7 @@ import {
     update
 } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
 import { publishPeriod, unpublishPeriod, createNextPeriod } from "./schedule-api.js";
-
+import { showToast } from "./toast.js";
 let usersData = [];
 let scheduleData = [];
 let leaveData = [];
@@ -119,15 +119,26 @@ export function renderSchedule() {
 
             if (isEditMode) {
                 html += `<td>
-                    <select class="shift-select" data-staff="${user.id}" data-day="${day}">
-                        <option value=""></option>
-                        <option value="休" ${shift === "休" ? "selected" : ""}>休</option>
-                        <option value="8" ${shift === "8" ? "selected" : ""}>8</option>
-                        <option value="10" ${shift === "10" ? "selected" : ""}>10</option>
-                        <option value="14" ${shift === "14" ? "selected" : ""}>14</option>
-                        <option value="15" ${shift === "15" ? "selected" : ""}>15</option>
-                    </select>
-                </td>`;
+    <input
+        class="shift-input"
+        list="shift-list"
+        value="${shift || ""}"
+        data-staff="${user.id}"
+        data-day="${day}">
+</td>`;
+                html += `
+<datalist id="shift-list">
+    <option value="休">
+    <option value="5:55">
+    <option value="6">
+    <option value="8">
+    <option value="10">
+    <option value="12">
+    <option value="13">
+    <option value="14">
+    <option value="15">
+</datalist>
+`;
             } else {
                 html += `<td>${shift}</td>`;
             }
@@ -180,7 +191,7 @@ export function renderSchedule() {
 
             renderSchedule();
         } else {
-            alert("決定に失敗しました");
+            showToast("決定に失敗しました", "error");
         }
     });
 
@@ -193,7 +204,7 @@ export function renderSchedule() {
             if (p) p.status = "draft";
             renderSchedule();
         } else {
-            alert("解消に失敗しました");
+            showToast("解消に失敗しました", "error");
         }
     });
 }
@@ -227,11 +238,11 @@ export async function saveToSheet(schedules) {
 }
 
 export async function saveSchedule() {
-    const selects = document.querySelectorAll(".shift-select");
-    selects.forEach(select => {
-        const staffId = select.dataset.staff;
-        const day = select.dataset.day;
-        const value = select.value;
+    const inputs = document.querySelectorAll(".shift-input");
+    inputs.forEach(input => {
+        const staffId = input.dataset.staff;
+        const day = input.dataset.day;
+        const value = input.value;
         const item = scheduleData.find(s =>
             s.period === currentPeriod &&
             String(s.staffId) === String(staffId) &&
@@ -251,7 +262,7 @@ export async function saveSchedule() {
     const periodData = scheduleData.filter(s => s.period === currentPeriod);
     await saveToSheet(periodData);
     setEditMode(false);
-    alert("保存完了");
+    showToast("保存完了", "success");
 }
 
 export async function loadSchedule() {
