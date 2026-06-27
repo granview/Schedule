@@ -17,12 +17,19 @@ export function setLeavePeriods(periods) {
     currentLeavePeriod = null;
 }
 
+export function setUsersData(users) {
+    usersData = users;
+    renderLeave();
+}
+
 function parsePeriodCode(periodCode) {
     const parts = periodCode.split("-");
     const year = Number(parts[0]);
     const month = Number(parts[1]);
     const half = parts[2];
-    let startDay, endDay;
+    let startDay;
+    let endDay;
+
     if (half === "A") {
         startDay = 1;
         endDay = 15;
@@ -30,6 +37,7 @@ function parsePeriodCode(periodCode) {
         startDay = 16;
         endDay = new Date(year, month, 0).getDate();
     }
+
     return { year, month, startDay, endDay, periodCode };
 }
 
@@ -38,67 +46,76 @@ function getDefaultPeriodCode() {
     const year = today.getFullYear();
     const month = today.getMonth() + 1;
     const day = today.getDate();
+
     if (day <= 15) {
         return `${year}-${String(month).padStart(2, "0")}-B`;
     }
-    const nextMonth = month + 1;
-    return `${year}-${String(nextMonth).padStart(2, "0")}-A`;
+
+    const nextMonth = month === 12 ? 1 : month + 1;
+    const nextYear = month === 12 ? year + 1 : year;
+    return `${nextYear}-${String(nextMonth).padStart(2, "0")}-A`;
+}
+
+function formatHalf(periodCode) {
+    return periodCode.endsWith("-A") ? "前半" : "後半";
 }
 
 export function renderLeave() {
     const container = document.getElementById("leaveContainer");
     const userString = sessionStorage.getItem("currentUser");
-    if (!userString) return;
-    const currentUser = JSON.parse(userString);
+    if (!container || !userString) return;
 
+    const currentUser = JSON.parse(userString);
     const draftPeriods = [...allPeriodsData]
         .filter(p => p.status === "draft")
         .sort((a, b) => a.period.localeCompare(b.period));
 
     if (!currentLeavePeriod) {
-        if (draftPeriods.length > 0) {
-            currentLeavePeriod = draftPeriods[draftPeriods.length - 1].period;
-        } else {
-            currentLeavePeriod = getDefaultPeriodCode();
-        }
+        currentLeavePeriod = draftPeriods.length > 0
+            ? draftPeriods[draftPeriods.length - 1].period
+            : getDefaultPeriodCode();
     }
 
     const periodCode = currentLeavePeriod;
     const period = parsePeriodCode(periodCode);
-    const halfStr = periodCode.endsWith("-A") ? "前半" : "後半";
-
-    let html = "";
+    let html = `
+<datalist id="leaveTypeList">
+    <option value="休">
+    <option value="有休">
+</datalist>
+`;
 
     if (draftPeriods.length > 0) {
         html += `<div class="leave-period-tabs">`;
         draftPeriods.forEach(p => {
             const parts = p.period.split("-");
-            const yr = parts[0];
-            const mo = Number(parts[1]);
-            const h = parts[2] === "A" ? "前半" : "後半";
+            const year = parts[0];
+            const month = Number(parts[1]);
             const isActive = p.period === currentLeavePeriod;
-            html += `<button class="leave-period-tab${isActive ? ' active' : ''}" data-period="${p.period}">${yr}年${mo}月${h}</button>`;
+            html += `<button class="leave-period-tab${isActive ? " active" : ""}" data-period="${p.period}">${year}年${month}月 ${formatHalf(p.period)}</button>`;
         });
         html += `</div>`;
     }
 
     html += `
     <h2 style="text-align:center; margin:12px 0;">
-        ${period.year}年${period.month}月&nbsp;${halfStr}&nbsp;希望休
+        ${period.year}年${period.month}月 ${formatHalf(periodCode)} 希望休
     </h2>
     <div style="overflow-x:auto;">
     <table class="leave-table">
         <thead>
             <tr>
-                <th>氏名</th>`;
+                <th>名前</th>`;
 
     for (let day = period.startDay; day <= period.endDay; day++) {
         html += `<th>${day}</th>`;
     }
+
     html += `</tr></thead><tbody>`;
 
     usersData.forEach(person => {
         html += `<tr><td class="name-cell">${person.name}</td>`;
+
         for (let day = period.startDay; day <= period.endDay; day++) {
             const leaveItem = leaveData.find(item =>
                 item.period === periodCode &&
@@ -109,22 +126,26 @@ export function renderLeave() {
             const isCurrentUser = String(person.id) === String(currentUser.id);
 
             if (isCurrentUser) {
-                html += `<td>
-                    <select class="leave-select" data-staff="${person.id}" data-day="${day}" style="width:100%;border:none;background:transparent;text-align:center;">
-                        <option value=""></option>
-                        <option value="休" ${leaveType === "休" ? "selected" : ""}>休</option>
-                        <option value="有休" ${leaveType === "有休" ? "selected" : ""}>有休</option>
-                    </select>
-                </td>`;
+                html += `
+    <td>
+        <input
+            class="leave-input"
+            list="leaveTypeList"
+            data-staff="${person.id}"
+            data-day="${day}"
+            value="${leaveType}"
+            style="width:100%; border:none; background:transparent; text-align:center;">
+    </td>`;
             } else {
                 html += `<td>${leaveType}</td>`;
             }
         }
+
         html += `</tr>`;
     });
 
     html += `</tbody></table></div><br>
-        <button id="saveLeaveBtn">希望休保存</button>`;
+        <button id="saveLeaveBtn">希望休を保存</button>`;
 
     container.innerHTML = html;
 
@@ -144,17 +165,22 @@ function registerLeaveEvents(periodCode, currentUser) {
 
     btn.onclick = async () => {
         const selectedLeaves = [];
-        document.querySelectorAll(".leave-select").forEach(select => {
-            if (select.value !== "") {
-                selectedLeaves.push({
-                    day: Number(select.dataset.day),
-                    type: select.value
-                });
-            }
+
+        document.querySelectorAll(".leave-input").forEach(input => {
+            selectedLeaves.push({
+                day: Number(input.dataset.day),
+                type: input.value.trim()
+            });
         });
+
         const result = await saveLeave(currentUser.id, periodCode, selectedLeaves);
-        console.log("SAVE RESULT", result);
-        alert("希望休保存完了");
+
+        if (result.success) {
+            alert("希望休を保存しました。");
+            window.dispatchEvent(new Event("leaveSaved"));
+        } else {
+            alert("希望休の保存に失敗しました。");
+        }
     };
 }
 

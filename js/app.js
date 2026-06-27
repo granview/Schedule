@@ -2,10 +2,9 @@ import {
     renderSchedule,
     loadSchedule,
     setData,
+    setUsersData,
     setEditMode,
     saveSchedule,
-    setCurrentPeriod,
-    openPeriod,
     setLeaveData,
     setAllPeriods
 } from "./schedule.js";
@@ -14,7 +13,8 @@ import {
     loadLeaveData,
     setLeaveUsers,
     getLeaveDataList,
-    setLeavePeriods
+    setLeavePeriods,
+    setUsersData as setLeaveUsersData
 } from "./leave.js";
 import {
     login,
@@ -25,6 +25,7 @@ import {
     loadPeriods
 } from "./schedule-api.js";
 import { showToast } from "./toast.js";
+
 function showModal(title, defaultValue) {
     return new Promise((resolve) => {
         const modal = document.getElementById("customModal");
@@ -57,6 +58,7 @@ document.getElementById("loginId").addEventListener("keydown", (e) => {
         document.getElementById("loginPassword").focus();
     }
 });
+
 document.getElementById("loginPassword").addEventListener("keydown", (e) => {
     if (e.key === "Enter") {
         e.preventDefault();
@@ -74,7 +76,7 @@ loginBtn.onclick = async () => {
     try {
         const user = await login(id, password);
         if (!user) {
-            showToast("Login Error: Sai ID hoặc Password", "error");
+            showToast("IDまたはパスワードが正しくありません。", "error");
             overlay.style.display = "none";
             return;
         }
@@ -85,20 +87,19 @@ loginBtn.onclick = async () => {
         document.getElementById("welcomeText").innerText = user.name;
 
         if (user.role === "manager") {
-    document.getElementById("editScheduleBtn").style.display = "inline-block";
-    document.getElementById("saveScheduleBtn").style.display = "none";
-    document.getElementById("addStaffBtn").style.display = "inline-block";
-}
+            document.getElementById("editScheduleBtn").style.display = "inline-block";
+            document.getElementById("saveScheduleBtn").style.display = "none";
+            document.getElementById("addStaffBtn").style.display = "inline-block";
+        }
 
         await performAppLoad();
-
     } catch (error) {
-        console.error("Lỗi:", error);
+        console.error("エラー:", error);
         const msg = error?.message || error?.code || JSON.stringify(error);
         if (msg.includes("permission") || msg.includes("PERMISSION")) {
-            showToast("Firebase: Quyền truy cập bị từ chối!\nVui lòng kiểm tra Security Rules trong Firebase Console.\nRules cần set: \".read\": true, \".write\": true", "error");
+            showToast("Firebaseのアクセス権限がありません。Security Rulesを確認してください。", "error");
         } else {
-            showToast("Có lỗi xảy ra: " + (msg || "Lỗi không xác định"), "error");
+            showToast("エラーが発生しました: " + (msg || "不明なエラー"), "error");
         }
     } finally {
         if (overlay) overlay.style.display = "none";
@@ -108,25 +109,24 @@ loginBtn.onclick = async () => {
 function registerScheduleButtons() {
     const editBtn = document.getElementById("editScheduleBtn");
     const saveBtn = document.getElementById("saveScheduleBtn");
+    const userStr = sessionStorage.getItem("currentUser");
+    const currentUser = userStr ? JSON.parse(userStr) : null;
+    const isManager = currentUser?.role === "manager";
 
-    // trạng thái ban đầu
-    editBtn.style.display = "inline-block";
+    editBtn.style.display = isManager ? "inline-block" : "none";
     saveBtn.style.display = "none";
 
+    if (!isManager) return;
+
     editBtn.onclick = () => {
-
         setEditMode(true);
-
         editBtn.style.display = "none";
         saveBtn.style.display = "inline-block";
     };
 
     saveBtn.onclick = async () => {
-
         await saveSchedule();
-
         setEditMode(false);
-
         saveBtn.style.display = "none";
         editBtn.style.display = "inline-block";
     };
@@ -155,12 +155,28 @@ async function performAppLoad() {
         registerLogoutEvent();
         registerScheduleButtons();
         registerAddStaffBtn();
-
     } catch (error) {
-        console.error("Lỗi tải dữ liệu:", error);
-        showToast("Có lỗi xảy ra khi tải dữ liệu!");
+        console.error("データ読み込みエラー:", error);
+        showToast("データの読み込み中にエラーが発生しました。", "error");
     }
 }
+
+async function refreshUsers() {
+    const users = await getUsers();
+    setUsersData(users);
+    setLeaveUsersData(users);
+}
+
+export async function refreshLeaveData() {
+    await loadLeaveData();
+    setLeaveData(getLeaveDataList());
+    renderLeave();
+    renderSchedule();
+}
+
+window.addEventListener("leaveSaved", async () => {
+    await refreshLeaveData();
+});
 
 function registerTabEvents() {
     const scheduleBtn = document.getElementById("scheduleTabBtn");
@@ -195,7 +211,7 @@ function formatPeriod(period) {
     const year = parts[0];
     const month = Number(parts[1]);
     const half = parts[2];
-    return `${year}年${month}月${half === "A" ? "前半" : "後半"}`;
+    return `${year}年${month}月 ${half === "A" ? "前半" : "後半"}`;
 }
 
 function registerAddStaffBtn() {
@@ -223,18 +239,18 @@ function registerAddStaffBtn() {
         const role = document.getElementById("staffRole").value;
 
         if (!id || !name || !password) {
-            showToast("すべての項目を入力してください", "error");
+            showToast("すべての項目を入力してください。", "error");
             return;
         }
 
         try {
             await saveUser({ id, name, password, role });
+            await refreshUsers();
             modal.style.display = "none";
-            showToast(`${name} を追加しました`, "success");
-            location.reload();
+            showToast(`${name}を追加しました。`, "success");
         } catch (e) {
             console.error(e);
-            showToast("保存に失敗しました", "error");
+            showToast("保存に失敗しました。", "error");
         }
     };
 }

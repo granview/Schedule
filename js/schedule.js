@@ -6,11 +6,25 @@ import {
 } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
 import { publishPeriod, unpublishPeriod, createNextPeriod } from "./schedule-api.js";
 import { showToast } from "./toast.js";
+
 let usersData = [];
 let scheduleData = [];
 let leaveData = [];
 let currentPeriod = null;
 let allPeriods = [];
+let isEditMode = false;
+
+const WEEK_DAYS = ["日", "月", "火", "水", "木", "金", "土"];
+const SHIFT_OPTIONS = ["休", "5:55", "6", "8", "10", "12", "13", "14", "15"];
+
+export function getUsersData() {
+    return usersData;
+}
+
+export function setUsersData(users) {
+    usersData = users;
+    renderSchedule();
+}
 
 export function setLeaveData(data) {
     leaveData = data;
@@ -30,21 +44,38 @@ export function setData(users, schedules) {
     scheduleData = schedules;
 }
 
-const WEEK_JP = ["日", "月", "火", "水", "木", "金", "土"];
+function formatHalf(periodCode) {
+    return periodCode.endsWith("-A") ? "前半" : "後半";
+}
+
+function formatPeriodLabel(periodCode) {
+    const period = parsePeriod(periodCode);
+    return `${period.year}年${period.month}月 ${formatHalf(periodCode)}`;
+}
 
 function createDateHeader(period) {
-    let html = `<tr><th rowspan="2">氏名</th>`;
+    let html = `<tr><th rowspan="2">名前</th>`;
+
     for (let day = period.startDay; day <= period.endDay; day++) {
-        html += `<th>${day}日</th>`;
+        html += `<th>${day}</th>`;
     }
+
     html += `</tr><tr>`;
+
     for (let day = period.startDay; day <= period.endDay; day++) {
         const dateObj = new Date(period.year, period.month - 1, day);
-        const week = WEEK_JP[dateObj.getDay()];
-        html += `<th>${week}</th>`;
+        html += `<th>${WEEK_DAYS[dateObj.getDay()]}</th>`;
     }
+
     html += `</tr>`;
     return html;
+}
+
+function createShiftDatalist() {
+    return `
+<datalist id="shift-list">
+    ${SHIFT_OPTIONS.map(option => `<option value="${option}">`).join("")}
+</datalist>`;
 }
 
 export function renderSchedule() {
@@ -52,49 +83,41 @@ export function renderSchedule() {
         currentPeriod = getCurrentPeriodCode();
     }
 
+    const container = document.getElementById("scheduleContainer");
+    if (!container) return;
+
     const userStr = sessionStorage.getItem("currentUser");
     const currentUser = userStr ? JSON.parse(userStr) : null;
     const isManager = currentUser && currentUser.role === "manager";
-
     const allSorted = [...allPeriods].sort((a, b) => a.period.localeCompare(b.period));
-
-    // Nhân viên chỉ thấy period đã được 決定 (published)
     const visiblePeriods = isManager
         ? allSorted
         : allSorted.filter(p => p.status === "published");
 
     if (visiblePeriods.length === 0) {
-        const container = document.getElementById("scheduleContainer");
         container.innerHTML = `<p style="text-align:center; color:#6b7280; padding:40px;">表示できる勤務表がありません。</p>`;
         return;
     }
 
-    // Nếu currentPeriod không có trong danh sách hiển thị → chọn cái cuối
     if (!visiblePeriods.find(p => p.period === currentPeriod)) {
         currentPeriod = visiblePeriods[visiblePeriods.length - 1].period;
     }
 
     const periodCode = currentPeriod;
     const period = parsePeriod(periodCode);
-    const halfStr = periodCode.endsWith("-A") ? "前半" : "後半";
-
-    const container = document.getElementById("scheduleContainer");
-
+    const currentPeriodMeta = allPeriods.find(p => p.period === periodCode);
+    const currentStatus = currentPeriodMeta?.status || "draft";
     const currentIndex = visiblePeriods.findIndex(p => p.period === periodCode);
     const hasPrev = currentIndex > 0;
     const hasNext = currentIndex < visiblePeriods.length - 1;
 
-    // 決定/解消 chỉ hiện cho manager, và chỉ ở period mới nhất trong allSorted
-    const latestPeriod = allSorted[allSorted.length - 1];
-    const isLatestPeriod = latestPeriod && latestPeriod.period === periodCode;
-    const latestStatus = isLatestPeriod ? latestPeriod.status : null;
-
     let html = `
         <div class="period-nav">
-            <button class="period-nav-btn" id="prevPeriodBtn" ${hasPrev ? '' : 'disabled'}>◀</button>
-            <span class="period-nav-title">${period.year}年${period.month}月&nbsp;${halfStr}</span>
-            <button class="period-nav-btn" id="nextPeriodBtn" ${hasNext ? '' : 'disabled'}>▶</button>
+            <button class="period-nav-btn" id="prevPeriodBtn" ${hasPrev ? "" : "disabled"}>&lt;</button>
+            <span class="period-nav-title">${formatPeriodLabel(periodCode)}</span>
+            <button class="period-nav-btn" id="nextPeriodBtn" ${hasNext ? "" : "disabled"}>&gt;</button>
         </div>
+        ${isEditMode ? createShiftDatalist() : ""}
         <div style="overflow-x:auto;">
         <table class="schedule-table">
             <thead>${createDateHeader(period)}</thead>
@@ -103,6 +126,7 @@ export function renderSchedule() {
 
     usersData.forEach(user => {
         html += `<tr><td class="name-cell">${user.name}</td>`;
+
         for (let day = period.startDay; day <= period.endDay; day++) {
             const item = scheduleData.find(s =>
                 s.period === currentPeriod &&
@@ -112,54 +136,40 @@ export function renderSchedule() {
             const leaveItem = leaveData.find(l =>
                 l.period === currentPeriod &&
                 String(l.staffId) === String(user.id) &&
-                Number(l.day) === Number(day)
+                Number(l.day) === Number(day) &&
+                l.type
             );
-            let shift = item ? item.shift : "";
-            if (!shift && leaveItem) shift = leaveItem.type || "休";
+            const shift = item?.shift || leaveItem?.type || "";
 
             if (isEditMode) {
                 html += `<td>
     <input
         class="shift-input"
         list="shift-list"
-        value="${shift || ""}"
+        value="${shift}"
         data-staff="${user.id}"
         data-day="${day}">
 </td>`;
-                html += `
-<datalist id="shift-list">
-    <option value="休">
-    <option value="5:55">
-    <option value="6">
-    <option value="8">
-    <option value="10">
-    <option value="12">
-    <option value="13">
-    <option value="14">
-    <option value="15">
-</datalist>
-`;
             } else {
                 html += `<td>${shift}</td>`;
             }
         }
+
         html += `</tr>`;
     });
 
     html += `</tbody></table></div>`;
 
-    if (isManager && isLatestPeriod && latestPeriod) {
-        if (latestStatus === "draft") {
-            html += `
-                <div style="text-align:center; margin-top:24px; padding-bottom:24px;">
-                    <button id="publishPeriodBtn" class="btn-publish">決定</button>
-                </div>`;
-        } else {
-            html += `
-                <div style="text-align:center; margin-top:24px; padding-bottom:24px;">
-                    <button id="unpublishPeriodBtn" class="btn-unpublish">解消</button>
-                </div>`;
-        }
+    if (isManager && currentPeriodMeta) {
+        const buttonId = currentStatus === "published" ? "closePeriodBtn" : "publishPeriodBtn";
+        const buttonClass = currentStatus === "published" ? "btn-unpublish" : "btn-publish";
+        const buttonText = currentStatus === "published" ? "閉じる" : "公開";
+
+        html += `
+            <div style="text-align:center; margin-top:24px; padding-bottom:24px;">
+                <button id="${buttonId}" class="${buttonClass}">${buttonText}</button>
+                <button id="exportExcelBtn" class="btn-export" style="margin-left:8px;">Excel出力</button>
+            </div>`;
     }
 
     container.innerHTML = html;
@@ -170,16 +180,15 @@ export function renderSchedule() {
     document.getElementById("nextPeriodBtn")?.addEventListener("click", () => {
         if (hasNext) openPeriod(visiblePeriods[currentIndex + 1].period);
     });
-
     document.getElementById("publishPeriodBtn")?.addEventListener("click", async () => {
-        const ok = window.confirm(`${period.year}年${period.month}月${halfStr}のシフトを決定しますか？`);
+        const ok = window.confirm(`${formatPeriodLabel(periodCode)}の勤務表を公開しますか？`);
         if (!ok) return;
+
         const result = await publishPeriod(periodCode);
         if (result.success) {
             const p = allPeriods.find(x => x.period === periodCode);
             if (p) p.status = "published";
 
-            // Tự động tạo kỳ tiếp theo nếu chưa tồn tại
             const nextCode = getNextPeriodCode(periodCode);
             const alreadyExists = allPeriods.find(x => x.period === nextCode);
             if (!alreadyExists) {
@@ -189,27 +198,31 @@ export function renderSchedule() {
                 }
             }
 
+            showToast("勤務表を公開しました。", "success");
             renderSchedule();
         } else {
-            showToast("決定に失敗しました", "error");
+            showToast("勤務表の公開に失敗しました。", "error");
         }
     });
-
-    document.getElementById("unpublishPeriodBtn")?.addEventListener("click", async () => {
-        const ok = window.confirm(`${period.year}年${period.month}月${halfStr}の決定を解消しますか？`);
+    document.getElementById("closePeriodBtn")?.addEventListener("click", async () => {
+        const ok = window.confirm(`${formatPeriodLabel(periodCode)}の勤務表を閉じますか？`);
         if (!ok) return;
+
         const result = await unpublishPeriod(periodCode);
         if (result.success) {
             const p = allPeriods.find(x => x.period === periodCode);
             if (p) p.status = "draft";
+
+            showToast("勤務表を閉じました。", "success");
             renderSchedule();
         } else {
-            showToast("解消に失敗しました", "error");
+            showToast("勤務表を閉じられませんでした。", "error");
         }
     });
+    document.getElementById("exportExcelBtn")?.addEventListener("click", async () => {
+        await exportScheduleExcel(periodCode);
+    });
 }
-
-let isEditMode = false;
 
 export function setEditMode(value) {
     isEditMode = value;
@@ -239,6 +252,7 @@ export async function saveToSheet(schedules) {
 
 export async function saveSchedule() {
     const inputs = document.querySelectorAll(".shift-input");
+
     inputs.forEach(input => {
         const staffId = input.dataset.staff;
         const day = input.dataset.day;
@@ -248,6 +262,7 @@ export async function saveSchedule() {
             String(s.staffId) === String(staffId) &&
             Number(s.day) === Number(day)
         );
+
         if (item) {
             item.shift = value;
         } else {
@@ -259,10 +274,16 @@ export async function saveSchedule() {
             });
         }
     });
+
     const periodData = scheduleData.filter(s => s.period === currentPeriod);
-    await saveToSheet(periodData);
-    setEditMode(false);
-    showToast("保存完了", "success");
+    const result = await saveToSheet(periodData);
+
+    if (result.success) {
+        setEditMode(false);
+        showToast("勤務表を保存しました。", "success");
+    } else {
+        showToast("勤務表の保存に失敗しました。", "error");
+    }
 }
 
 export async function loadSchedule() {
@@ -271,12 +292,80 @@ export async function loadSchedule() {
     return Object.values(snapshot.val());
 }
 
+function buildExportRows(periodCode) {
+    const period = parsePeriod(periodCode);
+
+    return usersData.map(user => {
+        const days = {};
+
+        for (let day = period.startDay; day <= period.endDay; day++) {
+            const item = scheduleData.find(s =>
+                s.period === periodCode &&
+                String(s.staffId) === String(user.id) &&
+                Number(s.day) === Number(day)
+            );
+            const leaveItem = leaveData.find(l =>
+                l.period === periodCode &&
+                String(l.staffId) === String(user.id) &&
+                Number(l.day) === Number(day) &&
+                l.type
+            );
+
+            days[String(day)] = item?.shift || leaveItem?.type || "";
+        }
+
+        return {
+            id: String(user.id),
+            name: user.name,
+            days
+        };
+    });
+}
+
+async function exportScheduleExcel(periodCode) {
+    try {
+        const apiBaseUrl = window.location.port === "5000"
+            ? ""
+            : "http://127.0.0.1:5000";
+        const response = await fetch(`${apiBaseUrl}/api/export-schedule`, {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json"
+            },
+            body: JSON.stringify({
+                period: periodCode,
+                rows: buildExportRows(periodCode)
+            })
+        });
+
+        if (!response.ok) {
+            throw new Error("export failed");
+        }
+
+        const blob = await response.blob();
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement("a");
+        link.href = url;
+        link.download = `schedule_${periodCode}.xlsx`;
+        document.body.appendChild(link);
+        link.click();
+        link.remove();
+        URL.revokeObjectURL(url);
+        showToast("Excelファイルを出力しました。", "success");
+    } catch (error) {
+        console.error(error);
+        showToast("Excel出力に失敗しました。", "error");
+    }
+}
+
 function parsePeriod(periodCode) {
     const parts = periodCode.split("-");
     const year = Number(parts[0]);
     const month = Number(parts[1]);
     const half = parts[2];
-    let startDay, endDay;
+    let startDay;
+    let endDay;
+
     if (half === "A") {
         startDay = 1;
         endDay = 15;
@@ -284,6 +373,7 @@ function parsePeriod(periodCode) {
         startDay = 16;
         endDay = new Date(year, month, 0).getDate();
     }
+
     return { year, month, startDay, endDay };
 }
 
@@ -297,13 +387,14 @@ function getNextPeriodCode(periodCode) {
     const year = Number(parts[0]);
     const month = Number(parts[1]);
     const half = parts[2];
+
     if (half === "A") {
         return `${year}-${String(month).padStart(2, "0")}-B`;
-    } else {
-        const nextMonth = month === 12 ? 1 : month + 1;
-        const nextYear = month === 12 ? year + 1 : year;
-        return `${nextYear}-${String(nextMonth).padStart(2, "0")}-A`;
     }
+
+    const nextMonth = month === 12 ? 1 : month + 1;
+    const nextYear = month === 12 ? year + 1 : year;
+    return `${nextYear}-${String(nextMonth).padStart(2, "0")}-A`;
 }
 
 function getCurrentPeriodCode() {
@@ -311,8 +402,10 @@ function getCurrentPeriodCode() {
     const year = today.getFullYear();
     const month = today.getMonth() + 1;
     const day = today.getDate();
+
     if (day <= 15) {
         return `${year}-${String(month).padStart(2, "0")}-A`;
     }
+
     return `${year}-${String(month).padStart(2, "0")}-B`;
 }

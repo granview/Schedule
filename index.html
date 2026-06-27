@@ -3,41 +3,33 @@
 
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>勤務管理システム</title>
     <link rel="stylesheet" href="css/style.css">
 </head>
 
 <body>
-
-    <!-- LOGIN -->
     <div id="loginPage">
         <h2>勤務管理システム</h2>
         <input type="text" id="loginId" placeholder="ID">
-        <input type="password" id="loginPassword" placeholder="Password">
+        <input type="password" id="loginPassword" placeholder="パスワード">
         <button id="loginBtn">ログイン</button>
     </div>
 
-    <!-- MAIN PAGE -->
     <div id="mainPage" style="display:none;">
-
-       <header>
-    <h2 id="welcomeText">Welcome</h2>
-
-    <div class="header-actions">
-        <button id="addStaffBtn">＋スタッフ</button>
-        <button id="logoutBtn" class="btn-danger">Logout</button>
-    </div>
-</header>
+        <header>
+            <h2 id="welcomeText">ようこそ</h2>
+            <div class="header-actions">
                 <button id="addStaffBtn" style="display:none;">スタッフ追加</button>
+                <button id="logoutBtn" class="btn-danger">ログアウト</button>
+            </div>
+        </header>
 
-
-        <!-- MENU -->
         <div class="menu">
             <button id="scheduleTabBtn">勤務表</button>
             <button id="leaveTabBtn">希望休</button>
         </div>
 
-        <!-- SCHEDULE -->
         <div id="scheduleTab">
             <div class="toolbar">
                 <button id="editScheduleBtn" style="display:none;">編集</button>
@@ -46,62 +38,70 @@
             <div id="scheduleContainer"></div>
         </div>
 
-        <!-- LEAVE -->
         <div id="leaveTab" style="display:none;">
             <div id="leaveContainer"></div>
         </div>
-
     </div>
 
-    <!-- LOADING OVERLAY -->
     <div id="loadingOverlay"
         style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(255,255,255,0.7); z-index:9999; justify-content:center; align-items:center; flex-direction:column;">
         <div class="spinner"
             style="border: 5px solid #f3f3f3; border-top: 5px solid #3498db; border-radius: 50%; width: 50px; height: 50px; animation: spin 1s linear infinite;">
         </div>
-        <p style="font-weight:bold; color:#333; margin-top:10px;">Loading...</p>
+        <p style="font-weight:bold; color:#333; margin-top:10px;">読み込み中...</p>
     </div>
 
-    <!-- STAFF MODAL -->
-    <div id="staffModal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.5); z-index:10000; justify-content:center; align-items:center;">
-        <div style="background:#fff; padding:32px; border-radius:12px; min-width:340px; box-shadow:0 8px 32px rgba(0,0,0,0.2);">
+    <div id="staffModal"
+        style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.5); z-index:10000; justify-content:center; align-items:center;">
+        <div
+            style="background:#fff; padding:32px; border-radius:12px; min-width:340px; box-shadow:0 8px 32px rgba(0,0,0,0.2);">
             <h3 style="margin:0 0 20px; font-size:16px; color:#222;">スタッフ追加</h3>
             <div style="display:flex; flex-direction:column; gap:12px;">
                 <div>
                     <label style="font-size:13px; color:#555; display:block; margin-bottom:4px;">ID</label>
-                    <input id="staffId" type="text" placeholder="例: 2" style="width:100%; padding:10px 12px; border:1px solid #ddd; border-radius:8px; font-size:15px; box-sizing:border-box;">
+                    <input id="staffId" type="text" placeholder="例: 2"
+                        style="width:100%; padding:10px 12px; border:1px solid #ddd; border-radius:8px; font-size:15px; box-sizing:border-box;">
                 </div>
                 <div>
                     <label style="font-size:13px; color:#555; display:block; margin-bottom:4px;">名前</label>
-                    <input id="staffName" type="text" placeholder="例: 田中太郎" style="width:100%; padding:10px 12px; border:1px solid #ddd; border-radius:8px; font-size:15px; box-sizing:border-box;">
+                    <input id="staffName" type="text" placeholder="例: 田中"
+                        style="width:100%; padding:10px 12px; border:1px solid #ddd; border-radius:8px; font-size:15px; box-sizing:border-box;">
                 </div>
                 <div>
                     <label style="font-size:13px; color:#555; display:block; margin-bottom:4px;">パスワード</label>
-                    <input id="staffPassword" type="text" placeholder="例: 1234" style="width:100%; padding:10px 12px; border:1px solid #ddd; border-radius:8px; font-size:15px; box-sizing:border-box;">
+                    <input id="staffPassword" type="text" placeholder="例: 1234"
+                        style="width:100%; padding:10px 12px; border:1px solid #ddd; border-radius:8px; font-size:15px; box-sizing:border-box;">
                 </div>
                 <div>
-                    <label style="font-size:13px; color:#555; display:block; margin-bottom:4px;">役割</label>
-                    <select id="staffRole" style="width:100%; padding:10px 12px; border:1px solid #ddd; border-radius:8px; font-size:15px; box-sizing:border-box;">
+                    <label style="font-size:13px; color:#555; display:block; margin-bottom:4px;">権限</label>
+                    <select id="staffRole"
+                        style="width:100%; padding:10px 12px; border:1px solid #ddd; border-radius:8px; font-size:15px; box-sizing:border-box;">
                         <option value="staff">スタッフ</option>
-                        <option value="manager">マネージャー</option>
+                        <option value="manager">管理者</option>
                     </select>
                 </div>
             </div>
             <div style="margin-top:20px; display:flex; gap:10px; justify-content:flex-end;">
-                <button id="staffCancelBtn" style="padding:8px 20px; border:1px solid #ccc; background:#f5f5f5; border-radius:8px; cursor:pointer; font-size:14px;">キャンセル</button>
-                <button id="staffSaveBtn" style="padding:8px 20px; border:none; background:#3b3fce; color:#fff; border-radius:8px; cursor:pointer; font-size:14px;">保存</button>
+                <button id="staffCancelBtn"
+                    style="padding:8px 20px; border:1px solid #ccc; background:#f5f5f5; border-radius:8px; cursor:pointer; font-size:14px;">キャンセル</button>
+                <button id="staffSaveBtn"
+                    style="padding:8px 20px; border:none; background:#3b3fce; color:#fff; border-radius:8px; cursor:pointer; font-size:14px;">保存</button>
             </div>
         </div>
     </div>
 
-    <!-- CUSTOM MODAL -->
-    <div id="customModal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.5); z-index:10000; justify-content:center; align-items:center;">
-        <div style="background:#fff; padding:32px; border-radius:12px; min-width:320px; box-shadow:0 8px 32px rgba(0,0,0,0.2);">
+    <div id="customModal"
+        style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.5); z-index:10000; justify-content:center; align-items:center;">
+        <div
+            style="background:#fff; padding:32px; border-radius:12px; min-width:320px; box-shadow:0 8px 32px rgba(0,0,0,0.2);">
             <h3 id="modalTitle" style="margin:0 0 16px; font-size:16px; color:#222;"></h3>
-            <input id="modalInput" type="text" style="width:100%; padding:10px 12px; border:1px solid #ddd; border-radius:8px; font-size:15px; box-sizing:border-box;">
+            <input id="modalInput" type="text"
+                style="width:100%; padding:10px 12px; border:1px solid #ddd; border-radius:8px; font-size:15px; box-sizing:border-box;">
             <div style="margin-top:16px; display:flex; gap:10px; justify-content:flex-end;">
-                <button id="modalCancelBtn" style="padding:8px 20px; border:1px solid #ccc; background:#f5f5f5; border-radius:8px; cursor:pointer; font-size:14px;">キャンセル</button>
-                <button id="modalOkBtn" style="padding:8px 20px; border:none; background:#3b3fce; color:#fff; border-radius:8px; cursor:pointer; font-size:14px;">OK</button>
+                <button id="modalCancelBtn"
+                    style="padding:8px 20px; border:1px solid #ccc; background:#f5f5f5; border-radius:8px; cursor:pointer; font-size:14px;">キャンセル</button>
+                <button id="modalOkBtn"
+                    style="padding:8px 20px; border:none; background:#3b3fce; color:#fff; border-radius:8px; cursor:pointer; font-size:14px;">OK</button>
             </div>
         </div>
     </div>
@@ -114,6 +114,7 @@
     </style>
 
     <script type="module" src="js/app.js"></script>
-<div id="toast"></div>
+    <div id="toast"></div>
 </body>
+
 </html>
