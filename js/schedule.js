@@ -6,6 +6,7 @@ import {
 } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
 import { publishPeriod, unpublishPeriod, createNextPeriod } from "./schedule-api.js";
 import { showToast } from "./toast.js";
+import { generateScheduleClient } from "./exportScheduleClient.js";
 
 let usersData = [];
 let scheduleData = [];
@@ -54,13 +55,13 @@ function formatPeriodLabel(periodCode) {
 }
 
 function createDateHeader(period) {
-    let html = `<tr><th rowspan="2">名前</th>`;
+    let html = `<tr class="schedule-header-date-row"><th rowspan="2">名前</th>`;
 
     for (let day = period.startDay; day <= period.endDay; day++) {
         html += `<th>${day}</th>`;
     }
 
-    html += `</tr><tr>`;
+    html += `</tr><tr class="schedule-header-weekday-row">`;
 
     for (let day = period.startDay; day <= period.endDay; day++) {
         const dateObj = new Date(period.year, period.month - 1, day);
@@ -118,7 +119,7 @@ export function renderSchedule() {
             <button class="period-nav-btn" id="nextPeriodBtn" ${hasNext ? "" : "disabled"}>&gt;</button>
         </div>
         ${isEditMode ? createShiftDatalist() : ""}
-        <div style="overflow-x:auto;">
+        <div class="schedule-table-wrapper">
         <table class="schedule-table">
             <thead>${createDateHeader(period)}</thead>
             <tbody>
@@ -324,25 +325,16 @@ function buildExportRows(periodCode) {
 
 async function exportScheduleExcel(periodCode) {
     try {
-        const apiBaseUrl = window.location.port === "5000"
-            ? ""
-            : "http://127.0.0.1:5000";
-        const response = await fetch(`${apiBaseUrl}/api/export-schedule`, {
-            method: "POST",
-            headers: {
-                "Content-Type": "application/json"
-            },
-            body: JSON.stringify({
-                period: periodCode,
-                rows: buildExportRows(periodCode)
-            })
-        });
+        const payload = {
+            period: periodCode,
+            rows: buildExportRows(periodCode)
+        };
 
-        if (!response.ok) {
-            throw new Error("export failed");
-        }
-
-        const blob = await response.blob();
+        // Generate Excel on client-side
+        const buffer = await generateScheduleClient(payload, "schedule.xlsx");
+        
+        // Download file
+        const blob = new Blob([buffer], { type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" });
         const url = URL.createObjectURL(blob);
         const link = document.createElement("a");
         link.href = url;

@@ -3,6 +3,8 @@ import {
     saveLeave
 } from "./leave-api.js";
 
+const WEEK_DAYS = ["日", "月", "火", "水", "木", "金", "土"];
+
 let leaveData = [];
 let usersData = [];
 let allPeriodsData = [];
@@ -101,14 +103,21 @@ export function renderLeave() {
     <h2 style="text-align:center; margin:12px 0;">
         ${period.year}年${period.month}月 ${formatHalf(periodCode)} 希望休
     </h2>
-    <div style="overflow-x:auto;">
+    <div class="leave-table-wrapper">
     <table class="leave-table">
-        <thead>
-            <tr>
-                <th>名前</th>`;
+        <thead id="leave-header-row">
+            <tr class="leave-header-date-row">
+                <th rowspan="2" class="leave-header-cell">名前</th>`;
 
     for (let day = period.startDay; day <= period.endDay; day++) {
         html += `<th>${day}</th>`;
+    }
+
+    html += `</tr><tr class="leave-header-weekday-row">`;
+
+    for (let day = period.startDay; day <= period.endDay; day++) {
+        const dateObj = new Date(period.year, period.month - 1, day);
+        html += `<th>${WEEK_DAYS[dateObj.getDay()]}</th>`;
     }
 
     html += `</tr></thead><tbody>`;
@@ -134,7 +143,7 @@ export function renderLeave() {
             data-staff="${person.id}"
             data-day="${day}"
             value="${leaveType}"
-            style="width:100%; border:none; background:transparent; text-align:center;">
+            style="width:65px; border:none; background:transparent; text-align:center;">
     </td>`;
             } else {
                 html += `<td>${leaveType}</td>`;

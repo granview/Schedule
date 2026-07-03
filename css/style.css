@@ -1,4 +1,4 @@
-/* ==================================================
+﻿/* ==================================================
    WORK SCHEDULE SYSTEM UI 2026
 ================================================== */
 
@@ -198,10 +198,7 @@ header{
 
     border-bottom:1px solid var(--border);
 
-    position:sticky;
-    top:0;
-
-    z-index:100;
+   
 }
 
 #welcomeText{
@@ -254,6 +251,79 @@ header{
     border-bottom:1px solid var(--border);
 }
 
+/* ==========================================
+   TABLE HEADER - STICKY
+========================================== */
+
+.schedule-table thead th,
+.leave-table thead th{
+    position:sticky;
+    z-index:100;
+    background:#f0f4f8;
+    font-weight:600;
+    border-bottom:2px solid var(--border);
+    font-size:13px;
+    color:#1f2937;
+}
+
+.schedule-header-date-row th{
+    top:0;
+}
+
+.schedule-header-weekday-row th{
+    top:44px;
+    border-bottom:10px solid #d1d5db !important;
+}
+
+.leave-header-date-row th{
+    top:0;
+}
+
+.leave-header-weekday-row th{
+    top:44px;
+    border-bottom:10px solid #d1d5db !important;
+}
+
+/* ==========================================
+   NAME COLUMN - STICKY
+========================================== */
+
+.schedule-table .name-cell,
+.leave-table .name-cell{
+    position:sticky;
+    left:0;
+    z-index:50;
+    background:#fffbeb;
+}
+
+/* ==========================================
+   TOP LEFT CELL - STICKY
+========================================== */
+
+.schedule-table .name-cell:first-child,
+.leave-table .leave-header-cell{
+    position:sticky;
+    top:0;
+    left:0;
+    z-index:101;
+    background:#fffbeb;
+    font-weight:600;
+}
+
+/* ==========================================
+   ROW HOVER
+========================================== */
+
+.schedule-table tbody tr:hover td,
+.leave-table tbody tr:hover td{
+    background:#f9fafb;
+}
+
+.schedule-table tbody tr:hover .name-cell,
+.leave-table tbody tr:hover .name-cell{
+    background:#fef3c7;
+}
+
 /* ==================================================
    CONTAINER
 ================================================== */
@@ -304,21 +374,39 @@ header{
    TABLE
 ================================================== */
 
-.schedule-table,
-.leave-table{
+
+
+
+
+/* ==========================================
+   TABLE WRAPPER
+========================================== */
+
+.schedule-table-wrapper,
+.leave-table-wrapper{
     width:100%;
+    overflow:auto;
+    max-height:75vh;
 
-    border-collapse:collapse;
-
-    background:#fff;
+    position:relative;
 
     border-radius:16px;
 
-    overflow:hidden;
-
     box-shadow:var(--shadow-md);
 
-    font-size:14px;
+    background:#fff;
+}
+
+/* ==========================================
+   TABLE
+========================================== */
+
+.schedule-table,
+.leave-table{
+    width:max-content;
+    min-width:100%;
+    border-collapse:collapse;
+    border-spacing:0;
 }
 
 .schedule-table th,
@@ -326,200 +414,10 @@ header{
 .leave-table th,
 .leave-table td{
     border:1px solid var(--border);
-
     padding:8px 6px;
-
     text-align:center;
-
     min-width:48px;
 }
 
-.schedule-table thead th,
-.leave-table thead th{
-    background:#f8fafc;
 
-    font-size:13px;
 
-    color:var(--text-light);
-
-    position:sticky;
-    top:0;
-    z-index:3;
-}
-
-.schedule-table tbody tr:hover,
-.leave-table tbody tr:hover{
-    background:#f9fafb;
-}
-
-.name-cell{
-    position:sticky;
-    left:0;
-
-    z-index:2;
-
-    min-width:140px;
-
-    text-align:left;
-
-    padding-left:14px !important;
-
-    background:#fffbeb !important;
-
-    font-weight:700;
-}
-
-/* ==================================================
-   LEAVE
-================================================== */
-
-.leave-select{
-    width:100%;
-    min-height:40px;
-
-    border:none;
-    outline:none;
-
-    background:transparent;
-
-    text-align:center;
-
-    font-size:14px;
-    font-weight:600;
-}
-
-.leave-select:focus{
-    background:#eef2ff;
-}
-
-.leave-select option[value="休"]{
-    color:#dc2626;
-}
-
-.leave-select option[value="有休"]{
-    color:#059669;
-}
-
-/* ==================================================
-   LEAVE PERIOD TAB
-================================================== */
-
-.leave-period-tabs{
-    display:flex;
-    flex-wrap:wrap;
-    gap:8px;
-
-    margin-bottom:16px;
-}
-
-.leave-period-tab{
-    padding:8px 18px;
-
-    border-radius:999px;
-
-    border:1px solid var(--border);
-
-    background:#fff;
-
-    cursor:pointer;
-}
-
-.leave-period-tab.active{
-    background:var(--primary);
-    color:#fff;
-}
-
-/* ==================================================
-   RESPONSIVE
-================================================== */
-
-@media (max-width:768px){
-
-    header{
-        padding:0 12px;
-    }
-
-    .menu{
-        padding:10px;
-    }
-
-    .toolbar{
-        padding:10px;
-    }
-
-    #scheduleContainer,
-    #leaveContainer{
-        padding:12px;
-    }
-
-    .schedule-table,
-    .leave-table{
-        font-size:12px;
-    }
-
-    .name-cell{
-        min-width:110px;
-    }
-}
-#toast{
-    position:fixed;
-    top:50%;
-    left:50%;
-
-    transform:translate(-50%,-50%) scale(.9);
-
-    background:#111827;
-    color:white;
-
-    padding:16px 28px;
-
-    border-radius:14px;
-
-    font-size:15px;
-    font-weight:600;
-
-    box-shadow:
-        0 10px 30px rgba(0,0,0,.25);
-
-    opacity:0;
-    visibility:hidden;
-
-    transition:.25s;
-
-    z-index:999999;
-
-    min-width:240px;
-    text-align:center;
-}
-
-#toast.show{
-    opacity:1;
-    visibility:visible;
-    transform:translate(-50%,-50%) scale(1);
-}
-
-#toast.success{
-    background:#10b981;
-}
-
-#toast.error{
-    background:#ef4444;
-}
-
-#toast.info{
-    background:#4f46e5;
-}
-.shift-input{
-    width:100%;
-    min-width:55px;
-
-    border:none;
-    outline:none;
-
-    text-align:center;
-
-    background:transparent;
-
-    font-size:14px;
-    font-weight:600;
-}
