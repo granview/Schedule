@@ -1,4 +1,5 @@
 // Client-side export function using ExcelJS
+// Client-side export function using ExcelJS
 export async function generateScheduleClient(payload, templatePath) {
     try {
         // Load template
@@ -21,11 +22,14 @@ export async function generateScheduleClient(payload, templatePath) {
 
         // 2. Fill fixed cells
         worksheet.getCell('M1').value = `${month}${monthText}${halfText}${shiftText}`;
-        worksheet.getCell('B2').value = parseInt(year);
-        worksheet.getCell('I2').value = parseInt(month);
+        
+        // Đã sửa thành C2 và J2 theo đúng file Excel
+        worksheet.getCell('C2').value = parseInt(year);
+        worksheet.getCell('J2').value = parseInt(month);
 
         // 3. Process dates and weekdays
-        const dayColumns = ["G", "I", "K", "M", "O", "Q", "S", "U", "W", "Y", "AA", "AC", "AE", "AG", "AI", "AK"];
+        // Đã sửa lại các cột ngày bắt đầu từ H, J, L...
+        const dayColumns = ["H", "J", "L", "N", "P", "R", "T", "V", "X", "Z", "AB", "AD", "AF", "AH", "AJ", "AL"];
         const weekdays = ["日", "月", "火", "水", "木", "金", "土"];
 
         for (let i = 0; i < dayColumns.length; i++) {
@@ -38,6 +42,8 @@ export async function generateScheduleClient(payload, templatePath) {
                 
                 worksheet.getCell(`${col}6`).value = `${day}日`;
                 worksheet.getCell(`${col}7`).value = weekday;
+                
+                // Giữ nguyên dòng 42, 43 theo code cũ
                 worksheet.getCell(`${col}42`).value = `${day}日`;
                 worksheet.getCell(`${col}43`).value = weekday;
             } else {
@@ -50,12 +56,16 @@ export async function generateScheduleClient(payload, templatePath) {
 
         // 4. Helper functions
         function normalizeName(name) {
+            // Đề phòng trường hợp ExcelJS đọc tên dưới dạng RichText object
+            if (name && typeof name === 'object' && name.richText) {
+                name = name.richText.map(rt => rt.text).join('');
+            }
             return String(name ?? "").replace(/\s+/g, "");
         }
 
         function convertShift(value) {
             const text = String(value ?? "");
-            if (text === "休" || text === "OFF") return "公";
+            if (text === "休" || text === "OFF") return "休";
             if (text === "有休" || text === "PAID") return "有";
             return text;
         }
@@ -73,11 +83,15 @@ export async function generateScheduleClient(payload, templatePath) {
         }
 
         // 6. Process employee rows
-        const nameRows = [16, 18, 20, 22, 24, 26, 28, 30, 32, 34, 37, 39];
+        // Đã update các dòng chứa tên thực tế trong file Excel (bắt đầu từ 12)
+        const nameRows = [12, 14, 16, 18, 20, 22, 24, 26, 28, 30, 33, 35, 39, 41];
+        
         for (const rowNum of nameRows) {
-            const cellName = worksheet.getCell(`B${rowNum}`).value;
+            // Lấy tên ở cột C thay vì cột B
+            const cellName = worksheet.getCell(`C${rowNum}`).value;
             const key = normalizeName(cellName);
             const dayMap = shiftsByName.get(key);
+            
             if (!dayMap) continue;
 
             for (let i = 0; i < dayColumns.length; i++) {

@@ -331,7 +331,7 @@ async function exportScheduleExcel(periodCode) {
         };
 
         // Generate Excel on client-side
-        const buffer = await generateScheduleClient(payload, "schedule.xlsx");
+        const buffer = await generateScheduleClient(payload, "schedule1.xlsx");
         
         // Download file
         const blob = new Blob([buffer], { type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" });
@@ -343,7 +343,6 @@ async function exportScheduleExcel(periodCode) {
         link.click();
         link.remove();
         URL.revokeObjectURL(url);
-        showToast("Excelファイルを出力しました。", "success");
     } catch (error) {
         console.error(error);
         showToast("Excel出力に失敗しました。", "error");
