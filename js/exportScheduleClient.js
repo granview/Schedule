@@ -70,8 +70,9 @@ export async function generateScheduleClient(payload, templatePath) {
             return text;
         }
 
-        // 5. Build map: normalizedName -> { [day]: shift }
+        // 5. Build map: normalizedName -> { [day]: shift } and redDays set
         const shiftsByName = new Map();
+        const redDaysByName = new Map();
         for (const r of payload.rows || []) {
             const key = normalizeName(r.name);
             if (!key) continue;
@@ -80,28 +81,53 @@ export async function generateScheduleClient(payload, templatePath) {
                 dayMap[dayKey] = convertShift(dayValue);
             }
             shiftsByName.set(key, dayMap);
+            redDaysByName.set(key, new Set(r.redDays || []));
         }
 
         // 6. Process employee rows
         // Đã update các dòng chứa tên thực tế trong file Excel (bắt đầu từ 12)
         const nameRows = [12, 14, 16, 18, 20, 22, 24, 26, 28, 30, 33, 35, 39, 41];
-        
+
         for (const rowNum of nameRows) {
             // Lấy tên ở cột C thay vì cột B
             const cellName = worksheet.getCell(`C${rowNum}`).value;
             const key = normalizeName(cellName);
             const dayMap = shiftsByName.get(key);
-            
+            const redDays = redDaysByName.get(key) || new Set();
+
             if (!dayMap) continue;
 
             for (let i = 0; i < dayColumns.length; i++) {
                 const day = String(startDay + i);
                 const value = dayMap[day] || "";
-                worksheet.getCell(`${dayColumns[i]}${rowNum}`).value = value;
+                const cell = worksheet.getCell(`${dayColumns[i]}${rowNum}`);
+                cell.value = value;
+                if (redDays.has(day) && value !== "") {
+                    cell.font = { name: "HGS明朝E", bold: true, color: { argb: "FFFF0000" } };
+                } else if (value !== "") {
+                    cell.font = { name: "HGS明朝E" };
+                }
             }
         }
 
-        // 7. Generate Excel file
+        // 7. Write restaurant notes rows (rows 8-9 in template)
+        const NOTES_ROW = 9;
+        const rNotes = payload.restaurantNotes?.notes || {};
+        const rRedDays = new Set(payload.restaurantNotes?.redDays || []);
+        for (let i = 0; i < dayColumns.length; i++) {
+            const day = String(startDay + i);
+            if (startDay + i > endDay) continue;
+            const noteCell = worksheet.getCell(`${dayColumns[i]}${NOTES_ROW}`);
+            const noteText = rNotes[day] || "";
+            noteCell.value = noteText;
+            if (rRedDays.has(day) && noteText) {
+                noteCell.font = { name: "HGS明朝E", bold: true, color: { argb: "FFFF0000" } };
+            } else if (noteText) {
+                noteCell.font = { name: "HGS明朝E" };
+            }
+        }
+
+        // 8. Generate Excel file
         const newBuffer = await workbook.xlsx.writeBuffer();
         return newBuffer;
 

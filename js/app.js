@@ -6,7 +6,10 @@ import {
     setEditMode,
     saveSchedule,
     setLeaveData,
-    setAllPeriods
+    setAllPeriods,
+    setRedData,
+    setRestaurantNotes,
+    initRedCellListener
 } from "./schedule.js";
 import {
     renderLeave,
@@ -22,7 +25,9 @@ import {
     saveUser
 } from "./auth.js";
 import {
-    loadPeriods
+    loadPeriods,
+    loadRedCells,
+    loadRestaurantNotes
 } from "./schedule-api.js";
 import { showToast } from "./toast.js";
 
@@ -134,15 +139,19 @@ function registerScheduleButtons() {
 
 async function performAppLoad() {
     try {
-        const [users, scheduleData] = await Promise.all([
+        const [users, scheduleData, redCells, restaurantNotes] = await Promise.all([
             getUsers(),
-            loadSchedule()
+            loadSchedule(),
+            loadRedCells(),
+            loadRestaurantNotes()
         ]);
 
         await loadLeaveData();
         const periods = await loadPeriods();
 
         setData(users, scheduleData);
+        setRedData(redCells);
+        setRestaurantNotes(restaurantNotes);
         setLeaveUsers(users);
         setLeaveData(getLeaveDataList());
         setAllPeriods(periods);
@@ -155,6 +164,7 @@ async function performAppLoad() {
         registerLogoutEvent();
         registerScheduleButtons();
         registerAddStaffBtn();
+        initRedCellListener();
     } catch (error) {
         console.error("データ読み込みエラー:", error);
         showToast("データの読み込み中にエラーが発生しました。", "error");

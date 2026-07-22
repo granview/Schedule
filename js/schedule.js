@@ -4,13 +4,15 @@ import {
     get,
     update
 } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
-import { publishPeriod, unpublishPeriod, createNextPeriod } from "./schedule-api.js";
+import { publishPeriod, unpublishPeriod, createNextPeriod, setRedCell, saveRestaurantNote } from "./schedule-api.js";
 import { showToast } from "./toast.js";
 import { generateScheduleClient } from "./exportScheduleClient.js";
 
 let usersData = [];
 let scheduleData = [];
 let leaveData = [];
+let redData = [];
+let restaurantNotes = {}; // { "2026_07_A": { "16": "text", ... } }
 let currentPeriod = null;
 let allPeriods = [];
 let isEditMode = false;
@@ -29,6 +31,28 @@ export function setUsersData(users) {
 
 export function setLeaveData(data) {
     leaveData = data;
+}
+
+export function setRedData(data) {
+    redData = data;
+}
+
+export function setRestaurantNotes(data) {
+    restaurantNotes = data || {};
+}
+
+function getNotesForPeriod(periodCode) {
+    const safeKey = periodCode.replace(/-/g, "_");
+    return restaurantNotes[safeKey] || {};
+}
+
+function isRedCell(staffId, day, period) {
+    const p = period || currentPeriod;
+    return redData.some(r =>
+        r.period === p &&
+        String(r.staffId) === String(staffId) &&
+        Number(r.day) === Number(day)
+    );
 }
 
 export function setCurrentPeriod(period) {
@@ -125,6 +149,30 @@ export function renderSchedule() {
             <tbody>
     `;
 
+    // ── レストランヘルプ 2 rows at top ──────────────────────
+    const notes = getNotesForPeriod(periodCode);
+    // Row 1: section label
+    html += `<tr class="restaurant-help-header-row">
+        <td class="name-cell restaurant-help-label">レストランヘルプ</td>`;
+    for (let day = period.startDay; day <= period.endDay; day++) {
+        html += `<td></td>`;
+    }
+    html += `</tr>`;
+    // Row 2: per-day notes
+    html += `<tr class="restaurant-help-notes-row">
+        <td class="name-cell restaurant-help-sublabel">備考</td>`;
+    for (let day = period.startDay; day <= period.endDay; day++) {
+        const note = notes[String(day)] || "";
+        const red = isRedCell("restaurant_help", day);
+        if (isEditMode) {
+            html += `<td class="${red ? "red-cell" : ""}"><input class="note-input shift-input" data-staff="restaurant_help" data-day="${day}" value="${note.replace(/"/g, '&quot;')}"></td>`;
+        } else {
+            html += `<td class="note-cell${red ? " red-cell" : ""}" data-staff="restaurant_help" data-day="${day}">${note}</td>`;
+        }
+    }
+    html += `</tr>`;
+    // ── End レストランヘルプ ────────────────────────────────
+
     usersData.forEach(user => {
         html += `<tr><td class="name-cell">${user.name}</td>`;
 
@@ -143,16 +191,11 @@ export function renderSchedule() {
             const shift = item?.shift || leaveItem?.type || "";
 
             if (isEditMode) {
-                html += `<td>
-    <input
-        class="shift-input"
-        list="shift-list"
-        value="${shift}"
-        data-staff="${user.id}"
-        data-day="${day}">
-</td>`;
+                const red = isRedCell(user.id, day);
+                html += `<td class="${red ? "red-cell" : ""}"><input class="shift-input" list="shift-list" value="${shift}" data-staff="${user.id}" data-day="${day}"></td>`;
             } else {
-                html += `<td>${shift}</td>`;
+                const red = isRedCell(user.id, day);
+                html += `<td class="${red ? "red-cell" : ""}" data-staff="${user.id}" data-day="${day}">${shift}</td>`;
             }
         }
 
@@ -230,6 +273,34 @@ export function setEditMode(value) {
     renderSchedule();
 }
 
+export function initRedCellListener() {
+    const container = document.getElementById("scheduleContainer");
+    if (!container) return;
+    container.addEventListener("dblclick", async (e) => {
+        if (isEditMode) return;
+        const td = e.target.closest("td[data-staff]");
+        if (!td) return;
+        const staffId = td.dataset.staff;
+        const day = Number(td.dataset.day);
+
+        const idx = redData.findIndex(r =>
+            r.period === currentPeriod &&
+            String(r.staffId) === String(staffId) &&
+            Number(r.day) === day
+        );
+
+        if (idx >= 0) {
+            redData.splice(idx, 1);
+            td.classList.remove("red-cell");
+            await setRedCell(currentPeriod, staffId, day, false);
+        } else {
+            redData.push({ period: currentPeriod, staffId: String(staffId), day });
+            td.classList.add("red-cell");
+            await setRedCell(currentPeriod, staffId, day, true);
+        }
+    });
+}
+
 export async function saveToSheet(schedules) {
     try {
         const updates = {};
@@ -276,8 +347,20 @@ export async function saveSchedule() {
         }
     });
 
+    // Save restaurant notes
+    const noteInputs = document.querySelectorAll(".note-input");
+    const noteSavePromises = [];
+    const safeKey = currentPeriod.replace(/-/g, "_");
+    if (!restaurantNotes[safeKey]) restaurantNotes[safeKey] = {};
+    noteInputs.forEach(input => {
+        const day = input.dataset.day;
+        const val = input.value.trim();
+        restaurantNotes[safeKey][day] = val;
+        noteSavePromises.push(saveRestaurantNote(currentPeriod, day, val));
+    });
+
     const periodData = scheduleData.filter(s => s.period === currentPeriod);
-    const result = await saveToSheet(periodData);
+    const [result] = await Promise.all([saveToSheet(periodData), ...noteSavePromises]);
 
     if (result.success) {
         setEditMode(false);
@@ -295,9 +378,11 @@ export async function loadSchedule() {
 
 function buildExportRows(periodCode) {
     const period = parsePeriod(periodCode);
+    const notes = getNotesForPeriod(periodCode);
 
     return usersData.map(user => {
         const days = {};
+        const redDays = [];
 
         for (let day = period.startDay; day <= period.endDay; day++) {
             const item = scheduleData.find(s =>
@@ -313,21 +398,36 @@ function buildExportRows(periodCode) {
             );
 
             days[String(day)] = item?.shift || leaveItem?.type || "";
+            if (isRedCell(user.id, day, periodCode)) redDays.push(String(day));
         }
 
         return {
             id: String(user.id),
             name: user.name,
-            days
+            days,
+            redDays
         };
     });
+}
+
+function buildRestaurantNotesExport(periodCode) {
+    const period = parsePeriod(periodCode);
+    const notes = getNotesForPeriod(periodCode);
+    const result = {};
+    const redDays = [];
+    for (let day = period.startDay; day <= period.endDay; day++) {
+        result[String(day)] = notes[String(day)] || "";
+        if (isRedCell("restaurant_help", day, periodCode)) redDays.push(String(day));
+    }
+    return { notes: result, redDays };
 }
 
 async function exportScheduleExcel(periodCode) {
     try {
         const payload = {
             period: periodCode,
-            rows: buildExportRows(periodCode)
+            rows: buildExportRows(periodCode),
+            restaurantNotes: buildRestaurantNotesExport(periodCode)
         };
 
         // Generate Excel on client-side

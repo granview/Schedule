@@ -1,0 +1,13 @@
+{
+  "name": "schedule-management",
+  "version": "1.0.0",
+  "description": "勤務管理システム - Work Schedule Management System",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "dependencies": {
+    "express": "^4.18.2",
+    "exceljs": "^4.4.0"
+  }
+}

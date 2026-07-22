@@ -1,4 +1,4 @@
-﻿/* ==================================================
+/* ==================================================
    WORK SCHEDULE SYSTEM UI 2026
 ================================================== */
 
@@ -417,6 +417,58 @@ header{
     padding:8px 6px;
     text-align:center;
     min-width:48px;
+}
+
+/* Red-flagged cells */
+/* ── レストランヘルプ rows ── */
+.restaurant-help-header-row td,
+.restaurant-help-notes-row td {
+    background: #fffbeb;
+}
+
+.restaurant-help-label {
+    font-weight: 700;
+    color: #92400e;
+    font-size: 0.82rem;
+    letter-spacing: 0.02em;
+    white-space: nowrap;
+}
+
+.restaurant-help-sublabel {
+    font-size: 0.75rem;
+    color: #a16207;
+    font-style: italic;
+}
+
+.note-cell {
+    font-size: 0.78rem;
+    color: #374151;
+    min-width: 32px;
+}
+
+.restaurant-help-header-row {
+    border-top: 2px solid #d97706 !important;
+}
+
+.restaurant-help-notes-row {
+    border-bottom: 2px solid #d97706 !important;
+}
+
+.red-cell input.shift-input,
+.red-cell input.note-input {
+    color: #dc2626;
+    font-weight: 700;
+}
+
+.red-cell{
+    color:#dc2626;
+    font-weight:700;
+}
+
+/* Cursor hint in view mode */
+.schedule-table td[data-staff]{
+    cursor:pointer;
+    user-select:none;
 }
 
 
